@@ -1,5 +1,5 @@
 # CleanConnect
-SIM2025Q2 - CleanConnect
+# SIM2025Q2 - CleanConnect
 
 
 This school project aims to design and develop a system for C2C freelance home cleaners matching to
