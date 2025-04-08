@@ -36,8 +36,19 @@ class LoginPage:
 
         user = self.controller.loginAccount(username ,password)
 
+
         if user:
-            messagebox.showinfo("Login Successful", "Welcome!")
+            print(f"Role ID: {user.role_id}")
+            if user.role_id == 1:
+                print ("Role: Admin")
+            elif user.role_id == 2:
+                print ("Role: Cleaner")
+            else:
+                print("Role not found")
+            
+                
+            print (f"User ID: {user.id}")
+            messagebox.showinfo("Login Successful", f"Welcome {user.username}!")
             # You could navigate to a new page class here
         else:
             messagebox.showerror("Login Failed", "Invalid credentials.")
