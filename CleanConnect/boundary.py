@@ -29,7 +29,8 @@ class LoginPage:
 
     def login(self):
 
-        self.controller = controller.UserLoginController()  # create controller instance
+        # Create login controller instance
+        self.controller = controller.UserLoginController()
 
         username = self.username_entry.get()
         password = self.password_entry.get()
@@ -39,20 +40,159 @@ class LoginPage:
 
         if user:
             print(f"Role ID: {user.role_id}")
+
             if user.role_id == 1:
                 print ("Role: Admin")
+                # Creates an instance of the admin page
+                AdminPage(self.root,user)
             elif user.role_id == 2:
                 print ("Role: Cleaner")
+                # Creates an instance of the cleaner page
+                CleanerPage(self.root,user)
+            elif user.role_id == 3:
+                print ("Role: Home Owner")
+                # Creates an instance of the home owner page
+                HomeOwnerPage(self.root,user)
+            elif user.role_id == 4:
+                print ("Role: Platform Manager")
+                # Creates an instance of the platform manager page
+                PlatformMngrPage(self.root,user)
+            
             else:
                 print("Role not found")
             
                 
             print (f"User ID: {user.id}")
             messagebox.showinfo("Login Successful", f"Welcome {user.username}!")
-            # You could navigate to a new page class here
         else:
             messagebox.showerror("Login Failed", "Invalid credentials.")
+
+    def logout(self):
+        messagebox.showinfo("Logged Out", "You have been logged out.")
+        self.displayLoginPage()
+
+
+# ADMIN PAGE
+class AdminPage:
+    def __init__(self, root, user):
+        self.root = root
+        self.user = user
+        self.displayAdminPage()
+
+    def displayAdminPage(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        Label(self.root, text=f"Admin Dashboard", font=("Arial", 24)).pack(pady=30)
+        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+
+        # Add Admin features here
+        Button(self.root, text="View Reports", command=self.dummy).pack(pady=5)
+        Button(self.root, text="Manage Users", command=self.dummy).pack(pady=5)
+
+        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def dummy(self):
+        messagebox.showinfo("Clicked", "Feature coming soon.")
+    
+    # Creates an instance of LoginPage to utilise the
+    # logout funtioned defined there
+    def logout(self):
+        logout = LoginPage(self.root)
+        logout.logout()
+
+
+# CLEANER PAGE
+class CleanerPage:
+    def __init__(self, root, user):
+        self.root = root
+        self.user = user
+        self.displayCleanerPage()
+
+    def displayCleanerPage(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        Label(self.root, text=f"Cleaner Dashboard", font=("Arial", 24)).pack(pady=30)
+        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+
+        # Add Admin features here
+        Button(self.root, text="View Services", command=self.dummy).pack(pady=5)
+        Button(self.root, text="View Interest Metrics", command=self.dummy).pack(pady=5)
+
+        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def dummy(self):
+        messagebox.showinfo("Clicked", "Feature coming soon.")
+
+    # Creates an instance of LoginPage to utilise the
+    # logout funtioned defined there
+    def logout(self):
+        logout = LoginPage(self.root)
+        logout.logout()
+
+
+# HOME OWNER PAGE
+class HomeOwnerPage:
+    def __init__(self, root, user):
+        self.root = root
+        self.user = user
+        self.displayHomeOwnerPage()
+
+    def displayHomeOwnerPage(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
+        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+
+        # Add Admin features here
+        Button(self.root, text="View Cleaners Available", command=self.dummy).pack(pady=5)
+
+        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def dummy(self):
+        messagebox.showinfo("Clicked", "Feature coming soon.")
+
+    # Creates an instance of LoginPage to utilise the
+    # logout funtioned defined there
+    def logout(self):
+        logout = LoginPage(self.root)
+        logout.logout()
         
+
+# PLATFORM PAGE
+class PlatformMngrPage:
+    def __init__(self, root, user):
+        self.root = root
+        self.user = user
+        self.PlatformMngrPage()
+
+    def PlatformMngrPage(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        Label(self.root, text=f"Platform Manager Dashboard", font=("Arial", 24)).pack(pady=30)
+        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+
+        # Add Admin features here
+        Button(self.root, text="View Cleaning Categories", command=self.dummy).pack(pady=5)
+        Button(self.root, text="Generate Reports etc", command=self.dummy).pack(pady=5)
+
+        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def dummy(self):
+        messagebox.showinfo("Clicked", "Feature coming soon.")
+
+    # Creates an instance of LoginPage to utilise the
+    # logout funtioned defined there
+    def logout(self):
+        logout = LoginPage(self.root)
+        logout.logout()           
 
 
 def page():
