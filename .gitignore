@@ -6,5 +6,4 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
-CleanConnect/tempCodeRunnerFile.py
+CleanConnect\__pycache__
