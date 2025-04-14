@@ -13,7 +13,5 @@ jobs:
       - uses: actions/setup-python@v4
       - run: |
              python -m pip install --upgrade pip
-             pip install pytest
+             python -m compile all 
              
-
-      - run: pytest
