@@ -16,11 +16,34 @@ else:
     print("Connection failed")
 
 class UserAccount:
-    def __init__(self, id=None, username=None, password=None, role_id=None):
+    def __init__(self, id=None, username=None, password=None, role_id=None, suspended=None):
         self.id = id
         self.username = username
         self.password = password
         self.role_id = role_id
+        self.suspended = suspended
+
+    def fetchAllAccounts(self):
+        cursor = db.cursor()
+        query = "SELECT * FROM useraccounts"
+        cursor.execute(query)
+        accounts = cursor.fetchall()
+
+        # Fetch role mapping
+        cursor.execute("SELECT role_id, role FROM userprofile")
+        role_map = dict(cursor.fetchall())
+
+        cursor.close()
+
+        account_list = []
+        for account in accounts:
+            user = UserAccount(account[0], account[1], account[2], account[3], account[4])
+            user.role = role_map.get(user.role_id, "Unknown")  # add role_name as extra field
+            account_list.append(user)
+
+        return account_list
+
+        
 
     def loginAccount(self, username, password):
         cursor = db.cursor()
@@ -37,6 +60,27 @@ class UserAccount:
             return UserAccount(*account)  # Unpack: id, username, password, role_id
         else:
             return None
+
+class UserProfile:
+    def __init__(self, role_id=None, role=None, suspended=None):
+        self.role_id = role_id
+        self.role = role
+        self.suspended = suspended
+
+    def fetchAllProfiles(self):
+        cursor = db.cursor()
+        query = "SELECT * FROM userprofile"
+        cursor.execute(query)
+        profiles = cursor.fetchall()
+        cursor.close()
+
+        profile_list = []
+        for profile in profiles:
+            profile = UserProfile(profile[0], profile[1], profile[2])
+            profile_list.append(profile)
+
+        return profile_list
+
         
 
 

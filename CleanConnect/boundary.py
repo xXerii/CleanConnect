@@ -3,6 +3,10 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk, messagebox, filedialog
 
+# Please use this dummy function as placeholder for the buttons if needed
+def dummy():
+    messagebox.showinfo("Clicked", "Feature coming soon.")
+
 class LoginPage:
     def __init__(self, root):
         self.root = root
@@ -77,6 +81,7 @@ class AdminPage:
     def __init__(self, root, user):
         self.root = root
         self.user = user
+        # Create ViewAccounts controller instance
         self.displayAdminPage()
 
     def displayAdminPage(self):
@@ -88,14 +93,106 @@ class AdminPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Reports", command=self.dummy).pack(pady=5)
-        Button(self.root, text="Manage Users", command=self.dummy).pack(pady=5)
+        Button(self.root, text="View Reports", command=dummy).pack(pady=5)
+        Button(self.root, text="Manage Users", command=self.openManageAccounts).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
-    def dummy(self):
-        messagebox.showinfo("Clicked", "Feature coming soon.")
+    # Opens the Accounts page
+    def openManageAccounts(self):
+        self.displayAccountsPage()
     
+    def displayAccountsPage(self):
+        self.controller = controller.ViewAccountsController()
+        # Set up the accounts display UI
+        for widget in self.root.winfo_children():
+            widget.destroy()
+         # Frame for the title
+        title_frame = tk.Frame(self.root)
+        title_frame.grid(row=0, column=0, columnspan=5, pady=30)  # Title section in grid (row 0)
+
+    # Title Label inside the title frame
+        tk.Label(title_frame, text="User Accounts", font=("Arial", 24)).grid(row=0, column=0, padx=200)
+
+    # Frame for the account table
+        table_frame = tk.Frame(self.root)
+        table_frame.grid(row=1, column=0, columnspan=5, pady=10)  # Table section in grid (row 1)
+
+    # Table Headers inside table frame
+        headers = ["User ID", "Username", "Role", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=0, column=col, padx=15, pady=5)
+
+    # Display account data inside table frame
+        accounts = self.controller.fetchAllAccounts()
+        row = 1  # Start placing accounts from the second row
+        for account in accounts:
+            tk.Label(table_frame, text=account.id, font=("Arial", 12)).grid(row=row, column=0, padx=15, pady=5)
+            tk.Label(table_frame, text=account.username, font=("Arial", 12)).grid(row=row, column=1, padx=15, pady=5)
+            tk.Label(table_frame, text=account.role, font=("Arial", 12)).grid(row=row, column=2, padx=15, pady=5)
+
+        # Add action buttons inside table frame
+            edit_button = tk.Button(table_frame, text="Edit", command=dummy)
+            edit_button.grid(row=row, column=3, padx=10, pady=5)
+            suspend_button = tk.Button(table_frame, text="Suspend", command=dummy) # THIS IS THE SUSPEND ACCOUNT BUTTON (Funtion goes after command)
+            suspend_button.grid(row=row, column=4, padx=10, pady=5)
+
+            row += 1  # Increment for the next account
+
+    # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        tk.Button(table_frame, text="Back to Dashboard", command=self.displayAdminPage).grid(row=row, column=0, padx=10, pady=10)
+        tk.Button(table_frame, text="View Profiles", command=self.openManageProfiles).grid(row=row, column=1, padx=10, pady=10)
+        tk.Button(table_frame, text="Add Account", command=dummy).grid(row=row, column=2, padx=10, pady=10) # THIS IS THE ADD ACCOUNT BUTTON (Funtion goes after command)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+    
+    # Opens the Accounts page
+    def openManageProfiles(self):
+        self.displayProfilesPage()
+
+    def displayProfilesPage(self):
+        self.controller = controller.ViewProfileController()
+        # Set up the accounts display UI
+        for widget in self.root.winfo_children():
+            widget.destroy()
+         # Frame for the title
+        title_frame = tk.Frame(self.root)
+        title_frame.grid(row=0, column=0, columnspan=5, pady=30)  # Title section in grid (row 0)
+
+    # Title Label inside the title frame
+        tk.Label(title_frame, text="User Profiles", font=("Arial", 24)).grid(row=0, column=0, padx=200)
+
+    # Frame for the account table
+        table_frame = tk.Frame(self.root)
+        table_frame.grid(row=1, column=0, columnspan=5, pady=10)  # Table section in grid (row 1)
+
+    # Table Headers inside table frame
+        headers = ["Role ID", "Role Name","Status","Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=0, column=col, padx=15, pady=5)
+
+    # Display account data inside table frame
+        profiles = self.controller.fetchAllProfiles()
+        row = 1  # Start placing accounts from the second row
+        for profile in profiles:
+            tk.Label(table_frame, text=profile.role_id, font=("Arial", 12)).grid(row=row, column=0, padx=15, pady=5)
+            tk.Label(table_frame, text=profile.role, font=("Arial", 12)).grid(row=row, column=1, padx=15, pady=5)
+            tk.Label(table_frame, text=profile.suspended, font=("Arial", 12)).grid(row=row, column=2, padx=15, pady=5)
+
+        # Add action buttons inside table frame
+            edit_button = tk.Button(table_frame, text="Edit", command=dummy)
+            edit_button.grid(row=row, column=3, padx=10, pady=5)
+            suspend_button = tk.Button(table_frame, text="Suspend", command=dummy) # THIS IS THE SUSPEND Profile BUTTON (Funtion goes after command)
+            suspend_button.grid(row=row, column=4, padx=10, pady=5)
+
+            row += 1  # Increment for the next account
+
+    # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        tk.Button(table_frame, text="Back to Dashboard ", command=self.displayAdminPage).grid(row=row, column=0, padx=10, pady=10)
+        tk.Button(table_frame, text="View Accounts", command=self.openManageAccounts).grid(row=row, column=1, padx=10, pady=10)
+        tk.Button(table_frame, text="Add Profile", command=dummy).grid(row=row, column=2, padx=10, pady=10) # THIS IS THE ADD Profile BUTTON (Funtion goes after command)
+        
+
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
     def logout(self):
@@ -119,13 +216,11 @@ class CleanerPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Services", command=self.dummy).pack(pady=5)
-        Button(self.root, text="View Interest Metrics", command=self.dummy).pack(pady=5)
+        Button(self.root, text="View Services", command=dummy).pack(pady=5)
+        Button(self.root, text="View Interest Metrics", command=dummy).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
-    def dummy(self):
-        messagebox.showinfo("Clicked", "Feature coming soon.")
 
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
@@ -150,7 +245,7 @@ class HomeOwnerPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Cleaners Available", command=self.dummy).pack(pady=5)
+        Button(self.root, text="View Cleaners Available", command=dummy).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
@@ -180,8 +275,8 @@ class PlatformMngrPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Cleaning Categories", command=self.dummy).pack(pady=5)
-        Button(self.root, text="Generate Reports etc", command=self.dummy).pack(pady=5)
+        Button(self.root, text="View Cleaning Categories", command=dummy).pack(pady=5)
+        Button(self.root, text="Generate Reports etc", command=dummy).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
