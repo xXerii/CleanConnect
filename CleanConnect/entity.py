@@ -37,3 +37,10 @@ class UserAccount:
             return UserAccount(*account)  # Unpack: id, username, password, role_id
         else:
             return None
+        
+
+
+
+
+
+# RANDOM STUFF FOR CI TESTING PLEASE IGNORE
