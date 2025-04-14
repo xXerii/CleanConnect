@@ -1,0 +1,10 @@
+# Ignore virtual environments when commmiting
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+CleanConnect\__pycache__
+CleanConnect\tempCodeRunnerFile.py
