@@ -102,7 +102,9 @@ class AdminPage:
         self.displayAccountsPage()
     
     def displayAccountsPage(self):
+        # Create ViewAccounts controller instance
         self.controller = controller.ViewAccountsController()
+
         # Set up the accounts display UI
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -136,6 +138,7 @@ class AdminPage:
         table_frame = tk.Frame(self.root)
         table_frame.grid(row=2, column=0, columnspan=5, pady=10)
 
+        # Fetch all accounts ONCE and store them
         self.all_accounts = self.controller.fetchAllAccounts()
 
         def render_table(accounts):
@@ -151,7 +154,7 @@ class AdminPage:
                 tk.Label(table_frame, text=account.id).grid(row=row, column=0, padx=15, pady=5)
                 tk.Label(table_frame, text=account.username).grid(row=row, column=1, padx=15, pady=5)
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id)).grid(row=row, column=2, padx=15, pady=5)
-                tk.Button(table_frame, text="Edit", command=lambda acc=account: self.edit_account(acc)).grid(row=row, column=3, padx=10)
+                tk.Button(table_frame, text="Edit", command=lambda acc=account: self.displayUpdatePage(acc)).grid(row=row, column=3, padx=10)
                 tk.Button(table_frame, text="Delete", command=lambda acc=account: self.delete_account(acc)).grid(row=row, column=4, padx=10)
 
         # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
@@ -160,6 +163,63 @@ class AdminPage:
             tk.Button(table_frame, text="Add Account", command=dummy).grid(row=row+1, column=2, padx=10, pady=10) # THIS IS THE ADD ACCOUNT BUTTON (Funtion goes after command)
 
         render_table(self.all_accounts)
+        
+    def displayUpdatePage(self, account):
+
+        self.controller = controller.UpdateAccountsController()
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Title for the update page
+        tk.Label(self.root, text="Update User Account", font=("Arial", 24)).pack(pady=20)
+
+        # Fields to update the username, password, and role
+        tk.Label(self.root, text="New Username:").pack(pady=5)
+        self.new_username_entry = tk.Entry(self.root, font=("Arial", 12))
+        self.new_username_entry.insert(0, account.username)  # Pre-fill with the current username
+        self.new_username_entry.pack(pady=5)
+
+        tk.Label(self.root, text="New Password:").pack(pady=5)
+        self.new_password_entry = tk.Entry(self.root, font=("Arial", 12), show="*")
+        self.new_password_entry.insert(0, account.password)  # Pre-fill with the current password
+        self.new_password_entry.pack(pady=5)
+
+        tk.Label(self.root, text="New Role ID:").pack(pady=5)
+        self.new_role_id_entry = tk.Entry(self.root, font=("Arial", 12))
+        self.new_role_id_entry.insert(0, account.role_id)  # Pre-fill with current role ID
+        self.new_role_id_entry.pack(pady=5)
+
+        # Buttons to submit or cancel the update
+        submit_button = tk.Button(self.root, text="Update", command=lambda: self.submit_update(account.id))
+        submit_button.pack(pady=10)
+
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancel_update)
+        cancel_button.pack(pady=10)
+
+    def submit_update(self, id):
+        # Get the values entered in the fields
+        new_username = self.new_username_entry.get()
+        new_password = self.new_password_entry.get()
+        new_role_id = self.new_role_id_entry.get()
+
+        # Validate the input
+        if not new_username or not new_password or not new_role_id:
+            messagebox.showerror("Error", "All fields must be filled out")
+            return
+
+        try:
+            # Call the controller's update method with the correct parameters
+            self.controller.updateAccount(id, new_username, new_password, new_role_id)
+            messagebox.showinfo("Success", "Account updated successfully!")
+            self.displayAccountsPage()  # Refresh the accounts page after successful update
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {e}")
+
+    def cancel_update(self):
+        # Simply go back to the accounts page without making any changes
+        self.displayAccountsPage()
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
@@ -168,7 +228,9 @@ class AdminPage:
         self.displayProfilesPage()
 
     def displayProfilesPage(self):
+        # Create ViewProfiles controller instance
         self.controller = controller.ViewProfileController()
+
         # Set up the accounts display UI
         for widget in self.root.winfo_children():
             widget.destroy()

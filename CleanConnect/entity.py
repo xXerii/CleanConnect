@@ -42,6 +42,20 @@ class UserAccount:
             account_list.append(user)
 
         return account_list
+    
+    def updateAccount(self, id, new_username, new_password, new_role_id):
+        # Perform the database update logic for the provided user ID
+        cursor = db.cursor()
+        query = """
+            UPDATE useraccounts
+            SET username = %s,
+                password = %s,
+                role_id = %s
+            WHERE id = %s
+        """
+        cursor.execute(query, (new_username, new_password, new_role_id, id))
+        db.commit()
+        cursor.close()
 
         
 
