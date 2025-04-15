@@ -11,8 +11,8 @@ class ViewAccountsController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
 
-    def fetchAllAccounts(self):
-        return self.userAccount.fetchAllAccounts()
+    def viewAccounts(self):
+        return self.userAccount.viewAccounts()
     
 class UpdateAccountsController:
     def __init__(self):
@@ -25,5 +25,5 @@ class ViewProfileController:
     def __init__(self):
         self.userProfile = entity.UserProfile()
 
-    def fetchAllProfiles(self):
-        return self.userProfile.fetchAllProfiles() 
+    def viewProfiles(self):
+        return self.userProfile.viewProfiles() 

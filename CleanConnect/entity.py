@@ -23,7 +23,7 @@ class UserAccount:
         self.role_id = role_id
         self.suspended = suspended
 
-    def fetchAllAccounts(self):
+    def viewAccounts(self):
         cursor = db.cursor()
         query = "SELECT * FROM useraccounts"
         cursor.execute(query)
@@ -81,7 +81,7 @@ class UserProfile:
         self.role = role
         self.suspended = suspended
 
-    def fetchAllProfiles(self):
+    def viewProfiles(self):
         cursor = db.cursor()
         query = "SELECT * FROM userprofile"
         cursor.execute(query)

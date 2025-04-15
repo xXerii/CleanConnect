@@ -128,18 +128,18 @@ class AdminPage:
 
         def perform_search():
             keyword = search_var.get().lower()
-            filtered = [acc for acc in self.controller.fetchAllAccounts() if keyword in acc.username.lower()]
+            filtered = [acc for acc in self.controller.viewAccounts() if keyword in acc.username.lower()]
             render_table(filtered)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
-        tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.fetchAllAccounts())).grid(row=0, column=3, padx=5)
+        tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewAccounts())).grid(row=0, column=3, padx=5)
 
         # Frame for table
         table_frame = tk.Frame(self.root)
         table_frame.grid(row=2, column=0, columnspan=5, pady=10)
 
         # Fetch all accounts ONCE and store them
-        self.all_accounts = self.controller.fetchAllAccounts()
+        self.all_accounts = self.controller.viewAccounts()
 
         def render_table(accounts):
             # Clear previous widgets in table frame
@@ -254,17 +254,17 @@ class AdminPage:
 
         def perform_search():
             keyword = search_var.get().lower()
-            filtered = [prof for prof in self.controller.fetchAllProfiles() if keyword in prof.role.lower()]
+            filtered = [prof for prof in self.controller.viewProfiles() if keyword in prof.role.lower()]
             render_table(filtered)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
-        tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.fetchAllProfiles())).grid(row=0, column=3, padx=5)
+        tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewProfiles())).grid(row=0, column=3, padx=5)
 
         # Frame for table
         table_frame = tk.Frame(self.root)
         table_frame.grid(row=2, column=0, columnspan=5, pady=10)
 
-        self.all_profiles = self.controller.fetchAllProfiles()
+        self.all_profiles = self.controller.viewProfiles()
 
         def render_table(profiles):
             # Clear previous widgets in table frame
