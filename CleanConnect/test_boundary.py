@@ -104,7 +104,6 @@ class AdminPage:
     def displayAccountsPage(self):
         # Create ViewAccounts controller instance
         self.controller = controller.ViewAccountsController()
-
         self.searchController = controller.SearchAccountsController()
 
         # Set up the accounts display UI
@@ -223,7 +222,6 @@ class AdminPage:
         # Simply go back to the accounts page without making any changes
         self.displayAccountsPage()
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
     # Opens the Profile page
@@ -233,6 +231,7 @@ class AdminPage:
     def displayProfilesPage(self):
         # Create ViewProfiles controller instance
         self.controller = controller.ViewProfileController()
+        self.searchController = controller.SearchProfilesController()
 
         # Set up the accounts display UI
         for widget in self.root.winfo_children():
@@ -252,13 +251,14 @@ class AdminPage:
         search_var=tk.StringVar()
 
         tk.Label(search_frame, text="Search Profile:").grid(row=0, column=0, padx=5)
-        search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
-        search_entry.grid(row=0, column=1, padx=5)
+        self.search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
+        self.search_entry.grid(row=0, column=1, padx=5)
 
         def perform_search():
-            keyword = search_var.get().lower()
-            filtered = [prof for prof in self.controller.viewProfiles() if keyword in prof.role.lower()]
-            render_table(filtered)
+            query = self.search_entry.get().strip()
+            if query:
+                filtered_profiles = self.searchController.searchProfiles(query)
+                render_table(filtered_profiles)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewProfiles())).grid(row=0, column=3, padx=5)

@@ -34,4 +34,11 @@ class ViewProfileController:
         self.userProfile = entity.UserProfile()
 
     def viewProfiles(self):
-        return self.userProfile.viewProfiles() 
+        return self.userProfile.viewProfiles()
+
+class SearchProfilesController:
+    def __init__(self):
+        self.userAccount = entity.UserProfile()
+
+    def searchProfiles(self, query):
+        return self.userAccount.searchProfiles(query) 

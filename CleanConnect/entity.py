@@ -104,6 +104,19 @@ class UserProfile:
             profile_list.append(profile)
 
         return profile_list
+    
+    def searchProfiles(self, search_query):
+        cursor = db.cursor()
+        query = "SELECT * FROM userprofile WHERE role LIKE %s" 
+        cursor.execute(query, (f"%{search_query}%",)) # Comma after the formatted string to make it a single-element tuple, wont work without
+        profiles = cursor.fetchall()
+        cursor.close()
+
+        profile_list = []
+        for profile in profiles:
+            profile_list.append(UserProfile(profile[0], profile[1], profile[2]))
+        return profile_list
+
 
         
 
