@@ -18,8 +18,8 @@ class SearchAccountsController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
 
-    def searchAccounts(self, query):
-        return self.userAccount.searchAccounts(query)
+    def searchAccounts(self, username):
+        return self.userAccount.searchAccounts(username)
     
     
 class UpdateAccountsController:
@@ -40,5 +40,5 @@ class SearchProfilesController:
     def __init__(self):
         self.userAccount = entity.UserProfile()
 
-    def searchProfiles(self, query):
-        return self.userAccount.searchProfiles(query) 
+    def searchProfiles(self, role):
+        return self.userAccount.searchProfiles(role) 
