@@ -156,7 +156,7 @@ class AdminPage:
                 tk.Label(table_frame, text=account.id).grid(row=row, column=0, padx=15, pady=5)
                 tk.Label(table_frame, text=account.username).grid(row=row, column=1, padx=15, pady=5)
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id)).grid(row=row, column=2, padx=15, pady=5)
-                tk.Button(table_frame, text="Edit", command=lambda acc=account: self.displayUpdatePage(acc)).grid(row=row, column=3, padx=10)
+                tk.Button(table_frame, text="Edit", command=lambda acc=account: self.displayAccountUpdatePage(acc)).grid(row=row, column=3, padx=10)
                 tk.Button(table_frame, text="Delete", command=lambda acc=account: self.delete_account(acc)).grid(row=row, column=4, padx=10)
 
         # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
@@ -166,9 +166,9 @@ class AdminPage:
 
         render_table(self.all_accounts)
         
-    def displayUpdatePage(self, account):
-
+    def displayAccountUpdatePage(self, account):
         self.controller = controller.UpdateAccountsController()
+        self.profileController = controller.ViewProfileController()
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -187,23 +187,34 @@ class AdminPage:
         self.new_password_entry.insert(0, account.password)  # Pre-fill with the current password
         self.new_password_entry.pack(pady=5)
 
-        tk.Label(self.root, text="New Role ID:").pack(pady=5)
-        self.new_role_id_entry = tk.Entry(self.root, font=("Arial", 12))
-        self.new_role_id_entry.insert(0, account.role_id)  # Pre-fill with current role ID
-        self.new_role_id_entry.pack(pady=5)
+        tk.Label(self.root, text="Select New Role:").pack(pady=5)
+
+        # Fetch roles from controller
+        profiles = self.profileController.viewProfiles()
+        roleOptions = [profile.role for profile in profiles]
+        self.roleMap = {profile.role: profile.role_id for profile in profiles}
+
+        currentRoleName = next((profile.role for profile in profiles if profile.role_id == account.role_id), None)
+        self.selectedRole = tk.StringVar()
+        self.selectedRole.set(currentRoleName)
+        
+        #Dropdown menu()
+        roleDropdown = tk.OptionMenu(self.root, self.selectedRole, *roleOptions)
+        roleDropdown.pack(pady=5)
 
         # Buttons to submit or cancel the update
-        submit_button = tk.Button(self.root, text="Update", command=lambda: self.submit_update(account.id))
+        submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitAccUpdate(account.id))
         submit_button.pack(pady=10)
 
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancel_update)
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelAccUpdate)
         cancel_button.pack(pady=10)
 
-    def submit_update(self, id):
+    def submitAccUpdate(self, id):
         # Get the values entered in the fields
         new_username = self.new_username_entry.get()
         new_password = self.new_password_entry.get()
-        new_role_id = self.new_role_id_entry.get()
+        selected_role_name = self.selectedRole.get()
+        new_role_id = self.roleMap[selected_role_name]
 
         # Validate the input
         if not new_username or not new_password or not new_role_id:
@@ -218,7 +229,7 @@ class AdminPage:
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
 
-    def cancel_update(self):
+    def cancelAccUpdate(self):
         # Simply go back to the accounts page without making any changes
         self.displayAccountsPage()
 
@@ -278,10 +289,10 @@ class AdminPage:
             for col, header in enumerate(headers):
                 tk.Label(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=0, column=col, padx=15, pady=5)
 
-            for row, account in enumerate(profiles, start=1):
-                tk.Label(table_frame, text=account.role_id).grid(row=row, column=0, padx=15, pady=5)
-                tk.Label(table_frame, text=account.role).grid(row=row, column=1, padx=15, pady=5)
-                tk.Button(table_frame, text="Edit", command=dummy).grid(row=row, column=2, padx=10)
+            for row, profile in enumerate(profiles, start=1):
+                tk.Label(table_frame, text=profile.role_id).grid(row=row, column=0, padx=15, pady=5)
+                tk.Label(table_frame, text=profile.role).grid(row=row, column=1, padx=15, pady=5)
+                tk.Button(table_frame, text="Edit", command=lambda prof=profile: self.displayProfileUpdatePage(prof)).grid(row=row, column=2, padx=10)
                 tk.Button(table_frame, text="Delete", command=dummy).grid(row=row, column=3, padx=10)
     
 
@@ -291,6 +302,50 @@ class AdminPage:
             tk.Button(table_frame, text="Add Profile", command=dummy).grid(row=row+1, column=2, padx=10, pady=10) # THIS IS THE ADD Profile BUTTON (Funtion goes after command)
 
         render_table(self.all_profiles)
+
+    def displayProfileUpdatePage(self, profile):
+
+        self.controller = controller.UpdateProfileController()
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Title for the update page
+        tk.Label(self.root, text="Update Profile", font=("Arial", 24)).pack(pady=20)
+
+        # Fields to update the username, password, and role
+        tk.Label(self.root, text="New Role Name:").pack(pady=5)
+        self.new_role_entry = tk.Entry(self.root, font=("Arial", 12))
+        self.new_role_entry.insert(0, profile.role)  # Pre-fill with the current username
+        self.new_role_entry.pack(pady=5)
+
+        # Buttons to submit or cancel the update
+        submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitProfUpdate(profile.role_id))
+        submit_button.pack(pady=10)
+
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelProfUpdate)
+        cancel_button.pack(pady=10)
+
+    def submitProfUpdate(self, role_id):
+        # Get the values entered in the fields
+        new_role = self.new_role_entry.get()
+
+        # Validate the input
+        if not new_role:
+            messagebox.showerror("Error", "All fields must be filled out")
+            return
+
+        try:
+            # Call the controller's update method with the correct parameters
+            self.controller.updateProfile(role_id, new_role)
+            messagebox.showinfo("Success", "Profile updated successfully!")
+            self.displayProfilesPage()  # Refresh the accounts page after successful update
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {e}")
+
+    def cancelProfUpdate(self):
+        # Simply go back to the accounts page without making any changes
+        self.displayProfilesPage()
 
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there

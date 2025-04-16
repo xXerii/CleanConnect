@@ -116,6 +116,14 @@ class UserProfile:
         for profile in profiles:
             profile_list.append(UserProfile(profile[0], profile[1], profile[2]))
         return profile_list
+    
+    def updateProfile(self, role_id, new_role):
+        # Perform the database update logic for the provided user ID
+        cursor = db.cursor()
+        query = "UPDATE userprofile SET role =%s WHERE role_id = %s "
+        cursor.execute(query, (new_role, role_id))
+        db.commit()
+        cursor.close()
 
 
         
