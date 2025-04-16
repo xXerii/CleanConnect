@@ -105,6 +105,8 @@ class AdminPage:
         # Create ViewAccounts controller instance
         self.controller = controller.ViewAccountsController()
 
+        self.searchController = controller.SearchAccountsController()
+
         # Set up the accounts display UI
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -123,13 +125,14 @@ class AdminPage:
         search_var=tk.StringVar()
 
         tk.Label(search_frame, text="Search Username:").grid(row=0, column=0, padx=5)
-        search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
-        search_entry.grid(row=0, column=1, padx=5)
+        self.search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
+        self.search_entry.grid(row=0, column=1, padx=5)
 
         def perform_search():
-            keyword = search_var.get().lower()
-            filtered = [acc for acc in self.controller.viewAccounts() if keyword in acc.username.lower()]
-            render_table(filtered)
+            query = self.search_entry.get().strip()
+            if query:
+                filtered_accounts = self.searchController.searchAccounts(query)
+                render_table(filtered_accounts)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewAccounts())).grid(row=0, column=3, padx=5)

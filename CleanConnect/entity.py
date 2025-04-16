@@ -57,7 +57,17 @@ class UserAccount:
         db.commit()
         cursor.close()
 
-        
+    def searchAccounts(self, search_query):
+        cursor = db.cursor()
+        query = "SELECT * FROM useraccounts WHERE username LIKE %s" 
+        cursor.execute(query, (f"%{search_query}%",)) # Comma after the formatted string to make it a single-element tuple, wont work without
+        accounts = cursor.fetchall()
+        cursor.close()
+
+        account_list = []
+        for account in accounts:
+            account_list.append(UserAccount(account[0], account[1], account[2], account[3], account[4]))
+        return account_list
 
     def loginAccount(self, username, password):
         cursor = db.cursor()

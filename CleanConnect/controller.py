@@ -13,6 +13,14 @@ class ViewAccountsController:
 
     def viewAccounts(self):
         return self.userAccount.viewAccounts()
+
+class SearchAccountsController:
+    def __init__(self):
+        self.userAccount = entity.UserAccount()
+
+    def searchAccounts(self, query):
+        return self.userAccount.searchAccounts(query)
+    
     
 class UpdateAccountsController:
     def __init__(self):
