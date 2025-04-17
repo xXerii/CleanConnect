@@ -97,6 +97,8 @@ class AdminPage:
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # User Accounts functions
     # Opens the Accounts page
     def openManageAccounts(self):
         self.displayAccountsPage()
@@ -188,7 +190,7 @@ class AdminPage:
             # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
             style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
             style_btn("View Profiles", self.openManageProfiles, "#3f51b5").grid(row=0, column=1, padx=10)
-            style_btn("Add Account", dummy, "#009688").grid(row=0, column=2, padx=10)
+            style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)
 
         render_table(self.all_accounts)
 
@@ -234,6 +236,55 @@ class AdminPage:
         # Suspend button with styling
         suspend_btn = tk.Button(button_frame, text="Suspend", width=10, command=handle_suspend, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         suspend_btn.pack(side="left", padx=10)
+    
+    def displayCreateAccountForm(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        Label(self.root, text="Create New Account", font=("Arial", 24)).pack(pady=20)
+
+        form_frame = Frame(self.root)
+        form_frame.pack(pady=10)
+
+        # Input fields
+        Label(form_frame, text="Name").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        name_entry = Entry(form_frame)
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        Label(form_frame, text="Username").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        username_entry = Entry(form_frame)
+        username_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        Label(form_frame, text="Password").grid(row=2, column=0, sticky='e', padx=5, pady=5)
+        password_entry = Entry(form_frame, show="*")
+        password_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        Label(form_frame, text="Confirm Password").grid(row=3, column=0, sticky='e', padx=5, pady=5)
+        confirm_password_entry = Entry(form_frame, show="*")
+        confirm_password_entry.grid(row=3, column=1, padx=5, pady=5)
+
+        Label(form_frame, text="Email").grid(row=4, column=0, sticky='e', padx=5, pady=5)
+        email_entry = Entry(form_frame)
+        email_entry.grid(row=4, column=1, padx=5, pady=5)
+
+        # Submit button
+        def submit():
+            name = name_entry.get()
+            username = username_entry.get()
+            password = password_entry.get()
+            confirm = confirm_password_entry.get()
+            email = email_entry.get()
+
+            if password != confirm:
+                messagebox.showerror("Error", "Passwords do not match.")
+                return
+
+            # Controller: Return Data
+            messagebox.showinfo("Success", f"Account for {username} created successfully!")
+
+        Button(self.root, text="Submit", command=submit).pack(pady=10)
+        Button(self.root, text="Back", command=self.displayAccountsPage).pack(pady=5)
+
         
     def displayAccountUpdateForm(self, account):
         self.controller = controller.UpdateAccountsController()
@@ -325,8 +376,8 @@ class AdminPage:
         # Simply go back to the accounts page without making any changes
         self.displayAccountsPage()
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-    
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # User Profile functions
     # Opens the Profile page
     def openManageProfiles(self):
         self.displayProfilesPage()
