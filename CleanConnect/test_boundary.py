@@ -153,10 +153,10 @@ class AdminPage:
                 tk.Label(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=0, column=col, padx=15, pady=5)
 
             for row, account in enumerate(accounts, start=1):
-                tk.Label(table_frame, text=account.id).grid(row=row, column=0, padx=15, pady=5)
+                tk.Label(table_frame, text=account.user_id).grid(row=row, column=0, padx=15, pady=5)
                 tk.Label(table_frame, text=account.username).grid(row=row, column=1, padx=15, pady=5)
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id)).grid(row=row, column=2, padx=15, pady=5)
-                tk.Button(table_frame, text="Edit", command=lambda acc=account: self.displayAccountUpdatePage(acc)).grid(row=row, column=3, padx=10)
+                tk.Button(table_frame, text="Update Account", command=lambda acc=account: self.displayAccountUpdateForm(acc)).grid(row=row, column=3, padx=10)
                 tk.Button(table_frame, text="Delete", command=lambda acc=account: self.delete_account(acc)).grid(row=row, column=4, padx=10)
 
         # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
@@ -166,28 +166,44 @@ class AdminPage:
 
         render_table(self.all_accounts)
         
-    def displayAccountUpdatePage(self, account):
+    def displayAccountUpdateForm(self, account):
         self.controller = controller.UpdateAccountsController()
         self.profileController = controller.ViewProfileController()
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Title for the update page
-        tk.Label(self.root, text="Update User Account", font=("Arial", 24)).pack(pady=20)
+        Label(self.root, text="Update Account", font=("Arial", 24)).pack(pady=20)
+
+        form_frame = Frame(self.root)
+        form_frame.pack(pady=10)
 
         # Fields to update the username, password, and role
-        tk.Label(self.root, text="New Username:").pack(pady=5)
-        self.new_username_entry = tk.Entry(self.root, font=("Arial", 12))
+        tk.Label(form_frame, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=5)
+        self.new_name_entry = tk.Entry(form_frame, font=("Arial", 12))
+        self.new_name_entry.insert(0, account.name)  # Pre-fill with the current username
+        self.new_name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(form_frame, text="Username:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        self.new_username_entry = tk.Entry(form_frame, font=("Arial", 12))
         self.new_username_entry.insert(0, account.username)  # Pre-fill with the current username
-        self.new_username_entry.pack(pady=5)
+        self.new_username_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        tk.Label(self.root, text="New Password:").pack(pady=5)
-        self.new_password_entry = tk.Entry(self.root, font=("Arial", 12), show="*")
+        tk.Label(form_frame, text="New Password:").grid(row=2, column=0, sticky='e', padx=5, pady=5)
+        self.new_password_entry = tk.Entry(form_frame, font=("Arial", 12), show="*")
         self.new_password_entry.insert(0, account.password)  # Pre-fill with the current password
-        self.new_password_entry.pack(pady=5)
+        self.new_password_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        tk.Label(self.root, text="Select New Role:").pack(pady=5)
+        tk.Label(form_frame, text="Confirm Password:").grid(row=3, column=0, sticky='e', padx=5, pady=5)
+        self.new_confirmpw_entry = tk.Entry(form_frame, font=("Arial", 12), show="*")
+        self.new_confirmpw_entry.grid(row=3, column=1, padx=5, pady=5)
+
+        tk.Label(form_frame, text="Email:").grid(row=4, column=0, sticky='e', padx=5, pady=5)
+        self.new_email_entry = tk.Entry(form_frame, font=("Arial", 12), show="*")
+        self.new_password_entry.insert(0, account.email)
+        self.new_email_entry.grid(row=4, column=1, padx=5, pady=5)
+
+        tk.Label(form_frame, text="Select New Role:").grid(row=5, column=0, sticky='e', padx=5, pady=5)
 
         # Fetch roles from controller
         profiles = self.profileController.viewProfiles()
@@ -203,18 +219,25 @@ class AdminPage:
         roleDropdown.pack(pady=5)
 
         # Buttons to submit or cancel the update
-        submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitAccUpdate(account.id))
+        submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitAccUpdate(account.user_id))
         submit_button.pack(pady=10)
 
         cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelAccUpdate)
         cancel_button.pack(pady=10)
 
-    def submitAccUpdate(self, id):
+    def submitAccUpdate(self, user_id):
         # Get the values entered in the fields
+        new_new = self.new_name_entry.get()
         new_username = self.new_username_entry.get()
+        new_email =  self.new_email_entry.get()
         new_password = self.new_password_entry.get()
+        confirmpw =  self.new_confirmpw_entry.get()
         selected_role_name = self.selectedRole.get()
         new_role_id = self.roleMap[selected_role_name]
+
+        if new_password != confirmpw:
+            messagebox.showerror("Error", "Passwords do not match.")
+            return
 
         # Validate the input
         if not new_username or not new_password or not new_role_id:
@@ -223,7 +246,7 @@ class AdminPage:
 
         try:
             # Call the controller's update method with the correct parameters
-            self.controller.updateAccount(id, new_username, new_password, new_role_id)
+            self.controller.updateAccount(user_id, new_username, new_password, new_role_id)
             messagebox.showinfo("Success", "Account updated successfully!")
             self.displayAccountsPage()  # Refresh the accounts page after successful update
         except Exception as e:

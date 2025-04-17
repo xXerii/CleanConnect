@@ -26,8 +26,8 @@ class UpdateAccountsController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
 
-    def updateAccount(self, id, new_username, new_password, new_role_id):
-        return self.userAccount.updateAccount(id,new_username, new_password, new_role_id)
+    def updateAccount(self, user_id, new_name, new_username, new_email, new_password, new_role_id):
+        return self.userAccount.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
     
 class ViewProfileController:
     def __init__(self):

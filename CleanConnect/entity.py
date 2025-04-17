@@ -16,9 +16,11 @@ else:
     print("Connection failed")
 
 class UserAccount:
-    def __init__(self, id=None, username=None, password=None, role_id=None, suspended=None):
-        self.id = id
+    def __init__(self, user_id=None, name=None, username=None, email=None, password=None, role_id=None, suspended=None):
+        self.user_id = user_id
+        self.name = name
         self.username = username
+        self.email = email
         self.password = password
         self.role_id = role_id
         self.suspended = suspended
@@ -37,23 +39,25 @@ class UserAccount:
 
         account_list = []
         for account in accounts:
-            user = UserAccount(account[0], account[1], account[2], account[3], account[4])
+            user = UserAccount(account[0], account[1], account[2], account[3], account[4], account[5], account[6])
             user.role = role_map.get(user.role_id, "Unknown")  # add role_name as extra field
             account_list.append(user)
 
         return account_list
     
-    def updateAccount(self, id, new_username, new_password, new_role_id):
+    def updateAccount(self, user_id, new_name, new_username, new_email, new_password, new_role_id):
         # Perform the database update logic for the provided user ID
         cursor = db.cursor()
         query = """
             UPDATE useraccounts
-            SET username = %s,
+            SET name = %s,
+                username = %s,
+                email = %s,
                 password = %s,
                 role_id = %s
-            WHERE id = %s
+            WHERE user_id = %s
         """
-        cursor.execute(query, (new_username, new_password, new_role_id, id))
+        cursor.execute(query, (new_name, new_username, new_email, new_password, new_role_id, user_id))
         db.commit()
         cursor.close()
 
@@ -66,13 +70,13 @@ class UserAccount:
 
         account_list = []
         for account in accounts:
-            account_list.append(UserAccount(account[0], account[1], account[2], account[3], account[4]))
+            account_list.append(UserAccount(account[0], account[1], account[2], account[3], account[4], account[5], account[6]))
         return account_list
 
     def loginAccount(self, username, password):
         cursor = db.cursor()
         query = """
-            SELECT ua.id, ua.username, ua.password, ua.role_id
+            SELECT ua.user_id, ua.name,ua.username, ua.email, ua.password, ua.role_id
             FROM useraccounts ua
             WHERE ua.username = %s AND ua.password = %s
         """
