@@ -2,6 +2,7 @@ import controller
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk, messagebox, filedialog
+from entity import UserAccount
 
 # Please use this dummy function as placeholder for the buttons if needed
 def dummy():
@@ -139,10 +140,55 @@ class AdminPage:
 
             row += 1  # Increment for the next account
 
+    # Add "Add Account" button
+        tk.Button(table_frame, text="Add Account", command=self.openCreateAccountForm).grid(row=row, column=2, padx=10, pady=10)
+
     # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
-        tk.Button(table_frame, text="Back to Dashboard", command=self.displayAdminPage).grid(row=row, column=0, padx=10, pady=10)
-        tk.Button(table_frame, text="View Profiles", command=self.openManageProfiles).grid(row=row, column=1, padx=10, pady=10)
-        tk.Button(table_frame, text="Add Account", command=dummy).grid(row=row, column=2, padx=10, pady=10) # THIS IS THE ADD ACCOUNT BUTTON (Funtion goes after command)
+        tk.Button(table_frame, text="Back to Dashboard", command=self.displayAdminPage).grid(row=row + 1, column=0, padx=10, pady=10)
+
+    def openCreateAccountForm(self):
+        # Clear the current window
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Title
+        tk.Label(self.root, text="Create User Account", font=("Arial", 24)).grid(row=0, column=0, columnspan=2, pady=20)
+
+        # Form fields
+        tk.Label(self.root, text="Username:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
+        username_entry = tk.Entry(self.root)
+        username_entry.grid(row=1, column=1, padx=10, pady=5)
+
+        tk.Label(self.root, text="Password:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
+        password_entry = tk.Entry(self.root, show="*")
+        password_entry.grid(row=2, column=1, padx=10, pady=5)
+
+        tk.Label(self.root, text="Role ID:").grid(row=3, column=0, padx=10, pady=5, sticky="e")
+        role_id_entry = tk.Entry(self.root)
+        role_id_entry.grid(row=3, column=1, padx=10, pady=5)
+
+        tk.Label(self.root, text="Suspended (0/1):").grid(row=4, column=0, padx=10, pady=5, sticky="e")
+        suspended_entry = tk.Entry(self.root)
+        suspended_entry.grid(row=4, column=1, padx=10, pady=5)
+
+        # Submit button
+        def submit():
+            username = username_entry.get()
+            password = password_entry.get()
+            role_id = int(role_id_entry.get())
+            suspended = int(suspended_entry.get())
+
+            # Call the createAccount method from the controller
+            try:
+                self.controller.createAccount(username, password, role_id, suspended)
+                tk.Label(self.root, text="Account created successfully!", fg="green").grid(row=6, column=0, columnspan=2, pady=10)
+            except Exception as e:
+                tk.Label(self.root, text=f"Error: {e}", fg="red").grid(row=6, column=0, columnspan=2, pady=10)
+
+        tk.Button(self.root, text="Create Account", command=submit).grid(row=5, column=0, columnspan=2, pady=20)
+
+        # Back button
+        tk.Button(self.root, text="Back", command=self.displayAccountsPage).grid(row=7, column=0, columnspan=2, pady=10)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     

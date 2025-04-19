@@ -5,7 +5,7 @@ db = mysql.connector.connect(
     user = "root",
     password = "",
     database = "clean_connect",
-    port = 3306
+    port = 3307
 
 )
 
@@ -43,7 +43,21 @@ class UserAccount:
 
         return account_list
 
-        
+    def createAccount(self, username, password, role_id, suspended=0):
+        cursor = db.cursor()
+        query = """
+            INSERT INTO useraccounts (username, password, role_id, suspended)
+            VALUES (%s, %s, %s, %s)
+        """
+        try:
+            cursor.execute(query, (username, password, role_id, suspended))
+            db.commit()
+            print("Account created successfully")
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            db.rollback()
+        finally:
+            cursor.close()
 
     def loginAccount(self, username, password):
         cursor = db.cursor()
