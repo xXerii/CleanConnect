@@ -13,6 +13,9 @@ class ViewAccountsController:
 
     def fetchAllAccounts(self):
         return self.userAccount.fetchAllAccounts()
+
+    def setAccountSuspension(self, id: int, suspended: bool):
+        self.userAccount.setSuspended(id, suspended)
     
 class ViewProfileController:
     def __init__(self):
