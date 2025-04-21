@@ -2,6 +2,7 @@ import controller
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk, messagebox, filedialog
+from entity import UserAccount
 
 # Please use this dummy function as placeholder for the buttons if needed
 def dummy():
