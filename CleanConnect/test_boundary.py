@@ -238,7 +238,9 @@ class AdminPage:
         suspend_btn = tk.Button(button_frame, text="Suspend", width=10, command=handle_suspend, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         suspend_btn.pack(side="left", padx=10)
     
-    def displayCreateAccountForm(self):
+    def displayCreateAccountForm(self,):
+        self.createController = controller.CreateAccountsController()
+        self.profileController = controller.ViewProfileController()
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -268,6 +270,19 @@ class AdminPage:
         email_entry = Entry(form_frame)
         email_entry.grid(row=4, column=1, padx=5, pady=5)
 
+        tk.Label(form_frame, text="Select New Role:").grid(row=5, column=0, sticky='e', padx=5, pady=5)
+
+        # Fetch roles from controller
+        profiles = self.profileController.viewProfiles()
+        roleOptions = [profile.role for profile in profiles]
+        self.roleMap = {profile.role: profile.role_id for profile in profiles}
+
+        self.selectedRole = tk.StringVar()
+        
+        #Dropdown menu()
+        roleDropdown = tk.OptionMenu(self.root, self.selectedRole, *roleOptions)
+        roleDropdown.pack(pady=5)
+
         # Submit button
         def submit():
             name = name_entry.get()
@@ -275,13 +290,19 @@ class AdminPage:
             password = password_entry.get()
             confirm = confirm_password_entry.get()
             email = email_entry.get()
+            selected_role_name = self.selectedRole.get()
+            role_id = self.roleMap[selected_role_name]
 
             if password != confirm:
                 messagebox.showerror("Error", "Passwords do not match.")
                 return
-
-            # Controller: Return Data
-            messagebox.showinfo("Success", f"Account for {username} created successfully!")
+            
+            try:
+                self.createController.createAccount(name, username, password ,email, role_id)
+                # Controller: Return Data
+                messagebox.showinfo("Success", f"Account for {username} created successfully!")
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
 
         Button(self.root, text="Submit", command=submit).pack(pady=10)
         Button(self.root, text="Back", command=self.displayAccountsPage).pack(pady=5)

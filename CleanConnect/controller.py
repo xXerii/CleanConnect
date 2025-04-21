@@ -10,7 +10,7 @@ class UserLoginController:
     
 class ViewAccountsController:
     def __init__(self):
-        self.user_account = UserAccount()
+        self.userAccount = UserAccount()
 
     def viewAccounts(self):
         return self.userAccount.viewAccounts()
@@ -30,9 +30,13 @@ class UpdateAccountsController:
     def updateAccount(self, user_id, new_name, new_username, new_email, new_password, new_role_id):
         return self.userAccount.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
     
-    def createAccount(self, username, password, role_id, suspended):
+class CreateAccountsController:
+    def __init__(self):
+        self.userAccount = entity.UserAccount()
+    
+    def createAccount(self, name, username, password ,email, role_id):
         # Create a new user account
-        return self.user_account.createAccount(username, password, role_id, suspended)
+        return self.userAccount.createAccount(name, username, password ,email, role_id)
     
 class ViewProfileController:
     def __init__(self):
