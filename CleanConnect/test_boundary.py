@@ -167,7 +167,7 @@ class AdminPage:
             if hasattr(self, 'button_frame') and self.button_frame:
                 self.button_frame.destroy()
 
-            headers = ["User ID", "Username", "Role", "Actions"]
+            headers = ["User ID", "Username", "Role","Status", "Actions"]
             header_font = ("Arial", 12, "bold")
             for col, header in enumerate(headers):
                 tk.Label(table_frame, text=header, font=header_font, bg="#e6e6e6", fg="#222", padx=15, pady=5).grid(row=0, column=col, sticky="nsew")
@@ -179,14 +179,18 @@ class AdminPage:
                 tk.Label(table_frame, text=account.username, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=1, sticky="nsew")
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id), font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
 
+                status = "Suspended" if account.suspended else "Active"
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=3, sticky="nsew")
+
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
-                action_frame.grid(row=row_count, column=3, padx=10, pady=5)
+                action_frame.grid(row=row_count, column=4, padx=10, pady=5)
 
                 edit_btn = tk.Button(action_frame, text="Edit", command=lambda acc=account: self.displayAccountUpdateForm(acc), font=("Arial", 12, "bold"), width=8, borderwidth=0, cursor="hand2")
                 edit_btn.pack(side="left", padx=10)
 
-                suspend_btn = tk.Button(action_frame, text="Suspend",  command=lambda acc=account: self.suspendUserAccount(acc.user_id, acc.suspended), fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
+                suspend_button_text = "Suspend" if not account.suspended else "Reactivate"
+                suspend_btn = tk.Button(action_frame, text=suspend_button_text,  command=lambda acc=account: self.suspendUserAccount(acc.user_id, acc.suspended), fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
                 suspend_btn.pack(side="left", padx=10)
 
                 row_count += 1  # Increment the row count after each account
@@ -239,14 +243,16 @@ class AdminPage:
         # Cancel button with styling
         cancel_btn = tk.Button(button_frame, text="Cancel", width=10, command=popup.destroy, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         cancel_btn.pack(side="left", padx=10)
+
+        # Dynamically update the button text based on current suspension status
+        suspend_button_text = "Suspend" if not currently_suspended else "Reactivate"
         
         def handle_suspend():
             self.toggleSuspension(user_id, currently_suspended)
             popup.destroy()
-            messagebox.showinfo("Success", "User account has been suspended.")
 
         # Suspend button with styling
-        suspend_btn = tk.Button(button_frame, text="Suspend", width=10, command=handle_suspend, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
+        suspend_btn = tk.Button(button_frame, text=suspend_button_text, width=10, command=handle_suspend, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         suspend_btn.pack(side="left", padx=10)
 
     def toggleSuspension(self, user_id, currently_suspended):
