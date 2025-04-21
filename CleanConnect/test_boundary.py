@@ -186,7 +186,7 @@ class AdminPage:
                 edit_btn = tk.Button(action_frame, text="Edit", command=lambda acc=account: self.displayAccountUpdateForm(acc), font=("Arial", 12, "bold"), width=8, borderwidth=0, cursor="hand2")
                 edit_btn.pack(side="left", padx=10)
 
-                suspend_btn = tk.Button(action_frame, text="Suspend", command=self.suspendUserAccount, fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
+                suspend_btn = tk.Button(action_frame, text="Suspend",  command=lambda acc=account: self.suspendUserAccount(acc.user_id, acc.suspended), fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
                 suspend_btn.pack(side="left", padx=10)
 
                 row_count += 1  # Increment the row count after each account
@@ -204,7 +204,8 @@ class AdminPage:
 
         render_table(self.all_accounts)
 
-    def suspendUserAccount(self):
+    def suspendUserAccount(self, user_id, currently_suspended):
+        self.suspendController = controller.SuspendAccountsController()
         # Create popup window
         popup = tk.Toplevel()
         popup.title("Suspend Account")
@@ -240,6 +241,7 @@ class AdminPage:
         cancel_btn.pack(side="left", padx=10)
         
         def handle_suspend():
+            self.toggleSuspension(user_id, currently_suspended)
             popup.destroy()
             messagebox.showinfo("Success", "User account has been suspended.")
 
@@ -249,7 +251,7 @@ class AdminPage:
 
     def toggleSuspension(self, user_id, currently_suspended):
         # Flip the flag
-        self.controller.setAccountSuspension(user_id, not bool(currently_suspended))
+        self.suspendController.setAccountSuspension(user_id, not bool(currently_suspended))
         # Feedback
         state = "suspended" if not currently_suspended else "reactivated"
         messagebox.showinfo("Success", f"Account {user_id} {state}.")
@@ -450,7 +452,7 @@ class AdminPage:
             tk.Label(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=0, column=col, padx=15, pady=5)
 
     # Display account data inside table frame
-        profiles = self.controller.fetchAllProfiles()
+        profiles = self.controller.viewProfiles()
         row = 1  # Start placing accounts from the second row
         for profile in profiles:
             tk.Label(table_frame, text=profile.role_id, font=("Arial", 12)).grid(row=row, column=0, padx=15, pady=5)

@@ -92,7 +92,7 @@ class UserAccount:
     def loginAccount(self, username, password):
         cursor = db.cursor()
         query = """
-            SELECT ua.id, ua.username, ua.password, ua.role_id, ua.suspended
+            SELECT ua.user_id, ua.name, ua.username, ua.email, ua.password, ua.role_id, ua.suspended
             FROM useraccounts ua
             WHERE ua.username = %s AND ua.password = %s
         """
@@ -104,13 +104,13 @@ class UserAccount:
             return None
 
         # Unpack including suspended flag
-        uid, uname, pw, role, suspended = row
-        return UserAccount(uid, uname, pw, role, suspended)
+        uid, name, username, email, pw, role, suspended = row
+        return UserAccount(uid, name, username, email, pw, role, suspended)
         
     def setSuspended(self, id: int, suspended: bool):
         cursor = db.cursor()
         cursor.execute(
-            "UPDATE useraccounts SET suspended=%s WHERE id=%s",
+            "UPDATE useraccounts SET suspended=%s WHERE user_id=%s",
             (1 if suspended else 0, id)
         )
         db.commit()

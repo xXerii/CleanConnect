@@ -38,8 +38,13 @@ class CreateAccountsController:
         # Create a new user account
         return self.userAccount.createAccount(name, username, password ,email, role_id)
 
+class SuspendAccountsController:
+    def __init__(self):
+        self.userAccount = entity.UserAccount()
+    
     def setAccountSuspension(self, id: int, suspended: bool):
-        self.userAccount.setSuspended(id, suspended)
+        return self.userAccount.setSuspended(id, suspended)
+    
     
 class ViewProfileController:
     def __init__(self):
