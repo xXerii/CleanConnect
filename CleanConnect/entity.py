@@ -92,18 +92,29 @@ class UserAccount:
     def loginAccount(self, username, password):
         cursor = db.cursor()
         query = """
-            SELECT ua.user_id, ua.name,ua.username, ua.email, ua.password, ua.role_id
+            SELECT ua.id, ua.username, ua.password, ua.role_id, ua.suspended
             FROM useraccounts ua
             WHERE ua.username = %s AND ua.password = %s
         """
         cursor.execute(query, (username, password))
-        account = cursor.fetchone()
+        row = cursor.fetchone()
         cursor.close()
 
-        if account:
-            return UserAccount(*account)  # Unpack: id, username, password, role_id
-        else:
+        if not row:
             return None
+
+        # Unpack including suspended flag
+        uid, uname, pw, role, suspended = row
+        return UserAccount(uid, uname, pw, role, suspended)
+        
+    def setSuspended(self, id: int, suspended: bool):
+        cursor = db.cursor()
+        cursor.execute(
+            "UPDATE useraccounts SET suspended=%s WHERE id=%s",
+            (1 if suspended else 0, id)
+        )
+        db.commit()
+        cursor.close()
 
 class UserProfile:
     def __init__(self, role_id=None, role=None, suspended=None):

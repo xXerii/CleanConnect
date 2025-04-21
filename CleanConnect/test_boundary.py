@@ -42,7 +42,16 @@ class LoginPage:
 
         user = self.controller.loginAccount(username ,password)
 
+        if not user:
+            messagebox.showerror("Login Failed", "Invalid credentials.")
+            return
 
+        if user.suspended:
+            messagebox.showerror("Account Suspended",
+                                "Your account has been suspended.\n"
+                                "Please contact an administrator.")
+            return
+        
         if user:
             print(f"Role ID: {user.role_id}")
 
@@ -237,6 +246,17 @@ class AdminPage:
         # Suspend button with styling
         suspend_btn = tk.Button(button_frame, text="Suspend", width=10, command=handle_suspend, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         suspend_btn.pack(side="left", padx=10)
+
+    def toggleSuspension(self, user_id, currently_suspended):
+        # Flip the flag
+        self.controller.setAccountSuspension(user_id, not bool(currently_suspended))
+        # Feedback
+        state = "suspended" if not currently_suspended else "reactivated"
+        messagebox.showinfo("Success", f"Account {user_id} {state}.")
+        # Refresh the table so status & button update
+        self.displayAccountsPage()
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
     def displayCreateAccountForm(self,):
         self.createController = controller.CreateAccountsController()
@@ -419,6 +439,36 @@ class AdminPage:
 
         # Title Label inside the title frame
         tk.Label(title_frame, text="User Profiles", font=("Arial", 24)).grid(row=0, column=0, padx=200)
+
+    # Frame for the account table
+        table_frame = tk.Frame(self.root)
+        table_frame.grid(row=1, column=0, columnspan=5, pady=10)  # Table section in grid (row 1)
+
+    # Table Headers inside table frame
+        headers = ["Role ID", "Role Name","Status", "Suspended", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=0, column=col, padx=15, pady=5)
+
+    # Display account data inside table frame
+        profiles = self.controller.fetchAllProfiles()
+        row = 1  # Start placing accounts from the second row
+        for profile in profiles:
+            tk.Label(table_frame, text=profile.role_id, font=("Arial", 12)).grid(row=row, column=0, padx=15, pady=5)
+            tk.Label(table_frame, text=profile.role, font=("Arial", 12)).grid(row=row, column=1, padx=15, pady=5)
+            tk.Label(table_frame, text=profile.suspended, font=("Arial", 12)).grid(row=row, column=2, padx=15, pady=5)
+
+        # Add action buttons inside table frame
+            edit_button = tk.Button(table_frame, text="Edit", command=dummy)
+            edit_button.grid(row=row, column=3, padx=10, pady=5)
+            suspend_button = tk.Button(table_frame, text="Suspend", command=dummy) # THIS IS THE SUSPEND Profile BUTTON (Funtion goes after command)
+            suspend_button.grid(row=row, column=4, padx=10, pady=5)
+
+            row += 1  # Increment for the next account
+
+    # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        tk.Button(table_frame, text="Back to Dashboard ", command=self.displayAdminPage).grid(row=row, column=0, padx=10, pady=10)
+        tk.Button(table_frame, text="View Accounts", command=self.openManageAccounts).grid(row=row, column=1, padx=10, pady=10)
+        tk.Button(table_frame, text="Add Profile", command=dummy).grid(row=row, column=2, padx=10, pady=10) # THIS IS THE ADD Profile BUTTON (Funtion goes after command)
         
         # Search Frame
         search_frame = tk.Frame(self.root)

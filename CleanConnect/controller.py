@@ -37,6 +37,9 @@ class CreateAccountsController:
     def createAccount(self, name, username, password ,email, role_id):
         # Create a new user account
         return self.userAccount.createAccount(name, username, password ,email, role_id)
+
+    def setAccountSuspension(self, id: int, suspended: bool):
+        self.userAccount.setSuspended(id, suspended)
     
 class ViewProfileController:
     def __init__(self):
