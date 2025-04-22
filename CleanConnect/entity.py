@@ -156,6 +156,49 @@ class UserProfile:
         db.commit()
         cursor.close()
 
+class CleanerService:
+    def __init__(self, clean_svc_id=None, cleaner_id=None, service_id=None, price=None, description=None):
+        self.clean_svc_id = clean_svc_id
+        self.cleaner_id = cleaner_id                  
+        self.service_id = service_id                    
+        self.price = price
+        self.description = description
+    
+    def addService(self, cleaner_id, service_id, price, description):
+        print(f"Adding service with cleaner_id={cleaner_id}, service_id={service_id}, price={price}, description={description}")
+        cursor = db.cursor()
+        query = """
+            INSERT INTO cleaner_service (cleaner_id, service_id, price, description)
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (cleaner_id, service_id, price, description))
+        db.commit()
+        cursor.close()
+
+        return True
+
+
+class CategoryService:
+    def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None):
+        self.catsv_id = catsv_id
+        self.cat_sv_name = cat_sv_name
+        self.parentCat_id = parentCat_id
+
+    def getAllCategories(self):
+        cursor = db.cursor()
+        cursor.execute("SELECT catsv_id, `cat/sv_name`, parentCat_id FROM categories_services WHERE parentCat_id IS NULL")
+        rows = cursor.fetchall()
+        cursor.close()
+        return [CategoryService(*row) for row in rows]
+
+    def getServicesByCategory(self, parentCat_id):
+        cursor = db.cursor()
+        cursor.execute("SELECT catsv_id, `cat/sv_name`, parentCat_id FROM categories_services WHERE parentCat_id = %s", (parentCat_id,))
+        rows = cursor.fetchall()
+        cursor.close()
+        return [CategoryService(*row) for row in rows]
+
+
 
         
 

@@ -1,5 +1,5 @@
 import entity
-from entity import UserAccount
+
 
 class UserLoginController:
     def __init__(self):
@@ -10,7 +10,7 @@ class UserLoginController:
     
 class ViewAccountsController:
     def __init__(self):
-        self.userAccount = UserAccount()
+        self.userAccount = entity.UserAccount()
 
     def viewAccounts(self):
         return self.userAccount.viewAccounts()
@@ -65,4 +65,27 @@ class UpdateProfileController:
         self.userProfile = entity.UserProfile()
 
     def updateProfile(self,role_id, new_role):
-        return self.userProfile.updateProfile(role_id, new_role) 
+        return self.userProfile.updateProfile(role_id, new_role)
+    
+class AddServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def addService(self, cleaner_id, service_id, price, description):
+        return self.cleanerService.addService(cleaner_id, service_id, price, description)
+
+class FetchCategoriesController:
+    def __init__(self):
+        self.category_service = entity.CategoryService()
+
+    def fetchCategories(self):
+        return self.category_service.getAllCategories()
+    
+class FetchServicesByCategoryController:
+    def __init__(self):
+        self.categoryService =entity.CategoryService()
+
+    def fetchServicesByCategory(self, parentCat_id):
+        return self.categoryService.getServicesByCategory(parentCat_id)
+
+
