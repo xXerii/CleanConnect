@@ -87,5 +87,13 @@ class FetchServicesByCategoryController:
 
     def fetchServicesByCategory(self, parentCat_id):
         return self.categoryService.getServicesByCategory(parentCat_id)
+    
+class FetchCleanerAllServicesController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def fetchCleanerAllService(self, user_id):
+        # Fetch all services with the associated cleaner and category info
+        return self.cleanerService.getCleanerServicesByUser(user_id)
 
 

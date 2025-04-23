@@ -163,7 +163,7 @@ class CleanerService:
         self.service_id = service_id                    
         self.price = price
         self.description = description
-    
+        
     def addService(self, cleaner_id, service_id, price, description):
         print(f"Adding service with cleaner_id={cleaner_id}, service_id={service_id}, price={price}, description={description}")
         cursor = db.cursor()
@@ -176,6 +176,27 @@ class CleanerService:
         cursor.close()
 
         return True
+
+    def getCleanerServicesByUser(self, user_id):
+        cursor = db.cursor()
+        query = """
+            SELECT cs.price, cs.description, c.`cat/sv_name` AS service_name
+            FROM cleaner_service cs
+            JOIN categories_services c ON cs.service_id = c.catsv_id
+            WHERE cs.cleaner_id = %s
+        """
+        cursor.execute(query, (user_id,))
+        services = cursor.fetchall()
+        cursor.close()
+
+        result = []
+        for row in services:
+            service_obj = CleanerService(price=row[0], description=row[1])  # price, description
+            service_obj.service_name = row[2]  # Now correctly setting the service_name
+            result.append(service_obj)
+
+        return result
+
 
 
 class CategoryService:
