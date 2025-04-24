@@ -251,6 +251,25 @@ class CleanerService:
             return False
         finally:
             cursor.close()
+        
+    def searchCleanerServices(self, search_query):
+        cursor = db.cursor()
+        query = """
+                SELECT cs.clean_svc_id, cs.cleaner_id, cs.category_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
+                FROM `cleaner_service` cs
+                JOIN `categories_services` s ON cs.service_id = s.`catsv_id`
+                JOIN `categories_services` c ON cs.category_id = c.`catsv_id`
+                WHERE s.`cat/sv_name` LIKE %s
+        """
+        cursor.execute(query, (f"%{search_query}%",))
+        services = cursor.fetchall()
+        cursor.close()
+
+        service_list = []
+        for service in services:
+            service_list.append(CleanerService(service[0], service[1], service[2], service[3], service[4], service[5]))
+        return service_list
+
 
 
 class CategoryService:

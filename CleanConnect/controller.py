@@ -109,4 +109,11 @@ class DeleteServiceController:
 
     def deleteService(self, cleaner_id, service_id):
         return self.cleanerService.deleteService(cleaner_id, service_id)
+    
+class SearchServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def searchService(self, search_query):
+        return self.cleanerService.searchCleanerServices(search_query)
 
