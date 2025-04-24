@@ -600,81 +600,164 @@ class CleanerPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Services", command=self.viewCleanerAllServices).pack(pady=5)
-        Button(self.root, text="Add Services", command=self.createCategoryServiceForm).pack(pady=5)
+        Button(self.root, text="View Services", command=self.displayMyServicesPage).pack(pady=5)
+        Button(self.root, text="Add Services", command=self.openCreateServiceForm).pack(pady=5)
         Button(self.root, text="View Interest Metrics", command=dummy).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
     
-    def getCleanerServices(self):
+    def displayMyServicesPage(self):
         # Create controller instance
-        self.fetchCleanerAllServicesController = controller.FetchCleanerAllServicesController()
-        cleaner_services = self.fetchCleanerAllServicesController.fetchCleanerAllService
-        return cleaner_services(self.user.user_id)
-
-    def viewCleanerAllServices(self):
-        services = self.getCleanerServices()
-        print(f"Fetched services: {services}")  # Add this line
-        print(self.user.user_id)
-
-        # Clear the current screen
+        self.fetchService = controller.FetchCleanerAllServicesController()
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Set background color
+        # Configure background
         self.root.configure(bg="#f0f2f5")
 
-        # Title
-        title = tk.Label(self.root, text="All My Services", font=("Arial", 24, "bold"),
-                        bg="#f0f2f5", fg="#333")
-        title.grid(row=0, column=0, columnspan=5, pady=(30, 10))
+        # Title Frame
+        title_frame = tk.Frame(self.root, bg="#f0f2f5")
+        title_frame.grid(row=0, column=0, columnspan=5, pady=30)
+        tk.Label(
+            title_frame,
+            text="My Services",
+            font=("Arial", 24, "bold"),
+            bg="#f0f2f5",
+            fg="#333"
+        ).grid(row=0, column=0, padx=200)
+
+        # Search Frame
+        search_frame = tk.Frame(self.root, bg="#f0f2f5")
+        search_frame.grid(row=1, column=0, columnspan=5, pady=10)
+        search_var = tk.StringVar()
+        tk.Label(search_frame, text="Search Service:", bg="#f0f2f5").grid(row=0, column=0, padx=5)
+        self.search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
+        self.search_entry.grid(row=0, column=1, padx=5)
+
+        def perform_search():
+            query = self.search_entry.get().strip()
+            if query:
+                filtered = self.serviceController.searchCleanerServices(self.user.user_id, query)
+                render_table(filtered)
+
+        tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
+        tk.Button(
+            search_frame,
+            text="Reset",
+            command=lambda: render_table(self.all_services)
+        ).grid(row=0, column=3, padx=5)
 
         # Table Frame
         table_frame = tk.Frame(self.root, bg="#add8e6")
-        table_frame.grid(row=1, column=0, columnspan=5, padx=40, pady=10, sticky="nsew")
+        table_frame.grid(row=2, column=0, columnspan=5, padx=30, pady=10, sticky="nsew")
 
-        # Headers
-        headers = ["Category", "Service", "Price", "Description", "Actions"]
-        for col, header in enumerate(headers):
-            tk.Label(table_frame, text=header, font=("Arial", 12, "bold"), borderwidth=1, relief="solid",
-                    padx=10, pady=5, bg="#d3d3d3", fg="black").grid(row=0, column=col, sticky="nsew")
+        # Nested function to render table with original styling
+        def render_table(services):
+            # Clear previous rows
+            for widget in table_frame.winfo_children():
+                widget.destroy()
 
-        # Service Rows
-        for row, service in enumerate(services, start=1):
-            row_color = "#add8e6"
+            # Headers
+            headers = ["Category", "Service", "Price", "Description", "Actions"]
+            for col, header in enumerate(headers):
+                tk.Label(
+                    table_frame,
+                    text=header,
+                    font=("Arial", 12, "bold"),
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg="#d3d3d3",
+                    fg="black"
+                ).grid(row=0, column=col, sticky="nsew")
 
-            print(f"service.cleaner_id: {service.cleaner_id}, service.service_id: {service.service_id}")
+            # Rows
+            for row, svc in enumerate(services, start=1):
+                row_color = "#add8e6"
+                tk.Label(
+                    table_frame,
+                    text=svc.category_name,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=0, sticky="nsew")
+                tk.Label(
+                    table_frame,
+                    text=svc.service_name,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=1, sticky="nsew")
+                tk.Label(
+                    table_frame,
+                    text=svc.price,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=2, sticky="nsew")
+                tk.Label(
+                    table_frame,
+                    text=svc.description,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=3, sticky="nsew")
 
-            tk.Label(table_frame, text=service.category_name, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=0, sticky="nsew")
-            tk.Label(table_frame, text=service.service_name, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=1, sticky="nsew")
-            tk.Label(table_frame, text=service.price, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=2, sticky="nsew")
-            tk.Label(table_frame, text=service.description, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=3, sticky="nsew")
+                # Actions
+                action_frame = tk.Frame(table_frame, bg=row_color)
+                action_frame.grid(row=row, column=4, sticky="nsew")
+                tk.Button(
+                    action_frame,
+                    text="Edit",
+                    command=lambda s=svc: self.openUpdateServiceForm(s.cleaner_id, s.service_id, s.price, s.description),
+                    font=("Arial", 10, "bold"),
+                    bg="#87CEEB",
+                    fg="black",
+                    relief="solid",
+                    padx=10,
+                    pady=5
+                ).grid(row=0, column=0, padx=5, pady=5)
+                tk.Button(
+                    action_frame,
+                    text="Delete",
+                    command=lambda s=svc: self.deleteService(s.cleaner_id, s.service_id),
+                    font=("Arial", 10, "bold"),
+                    bg="#FF7F7F",
+                    fg="black",
+                    relief="solid",
+                    padx=10,
+                    pady=5
+                ).grid(row=0, column=1, padx=5, pady=5)
 
-            # Actions
-            action_frame = tk.Frame(table_frame, bg=row_color)
-            action_frame.grid(row=row, column=4, sticky="nsew")
-
-            # Assuming service is an object with the required attributes
-            tk.Button(action_frame, text="Edit", command=lambda service=service: self.openUpdateServiceForm(service.cleaner_id, service.service_id, service.price, service.description),
-                    font=("Arial", 10, "bold"), bg="#87CEEB", fg="black", relief="solid",
-                    padx=10, pady=5).grid(row=0, column=0, padx=5, pady=5)
-
-            tk.Button(action_frame, text="Delete", command=lambda service=service: self.deleteService(service.cleaner_id, service.service_id),
-                    font=("Arial", 10, "bold"), bg="#FF7F7F", fg="black", relief="solid",
-                    padx=10, pady=5).grid(row=0, column=1, padx=5, pady=5)
+        # Fetch all services for this cleaner
+        all_services = self.fetchService.fetchCleanerAllService(self.user.user_id)
+        render_table(all_services)
 
         # Navigation Buttons (bottom)
         btn_frame = tk.Frame(self.root, bg="#f0f2f5")
         btn_frame.grid(row=2, column=0, columnspan=5, pady=30)
+        tk.Button(
+            btn_frame,
+            text="Back to Dashboard",
+            command=self.displayCleanerPage,
+            font=("Arial", 12, "bold"),
+            bg="#A9A9A9",
+            fg="black",
+            padx=20,
+            pady=10
+        ).grid(row=0, column=0, padx=10)
 
-        tk.Button(btn_frame, text="Back to Dashboard", command=self.displayCleanerPage,
-                font=("Arial", 12, "bold"), bg="#A9A9A9", fg="black", padx=20, pady=10).grid(row=0, column=0, padx=10)
         
-    def createCategoryServiceForm(self):
+    def openCreateServiceForm(self):
         for widget in self.root.winfo_children():
             widget.destroy()
 
