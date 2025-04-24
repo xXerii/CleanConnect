@@ -607,12 +607,14 @@ class CleanerPage:
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
     
     def getCleanerServices(self):
+        # Create controller instance
         self.fetchCleanerAllServicesController = controller.FetchCleanerAllServicesController()
         cleaner_services = self.fetchCleanerAllServicesController.fetchCleanerAllService
         return cleaner_services(self.user.user_id)
 
     def viewCleanerAllServices(self):
         services = self.getCleanerServices()
+        print(f"Fetched services: {services}")  # Add this line
         print(self.user.user_id)
 
         # Clear the current screen
@@ -641,6 +643,8 @@ class CleanerPage:
         for row, service in enumerate(services, start=1):
             row_color = "#add8e6"
 
+            print(f"service.cleaner_id: {service.cleaner_id}, service.service_id: {service.service_id}")
+
             tk.Label(table_frame, text=service.category_name, borderwidth=1, relief="solid", padx=10, pady=5,
                     bg=row_color).grid(row=row, column=0, sticky="nsew")
             tk.Label(table_frame, text=service.service_name, borderwidth=1, relief="solid", padx=10, pady=5,
@@ -654,7 +658,8 @@ class CleanerPage:
             action_frame = tk.Frame(table_frame, bg=row_color)
             action_frame.grid(row=row, column=4, sticky="nsew")
 
-            tk.Button(action_frame, text="Edit", command=lambda s=service: print("Dummy Edit clicked"),
+            # Assuming service is an object with the required attributes
+            tk.Button(action_frame, text="Edit", command=lambda service=service: self.openUpdateServiceForm(service.cleaner_id, service.service_id, service.price, service.description),
                     font=("Arial", 10, "bold"), bg="#87CEEB", fg="black", relief="solid",
                     padx=10, pady=5).grid(row=0, column=0, padx=5, pady=5)
 
@@ -726,7 +731,6 @@ class CleanerPage:
                 return service.catsv_id
         return None
 
-
     def onCategorySelected(self,event):
         # Fetch and display services based on the selected category
         selectedCategory = self.categoryCombobox.get()
@@ -740,8 +744,6 @@ class CleanerPage:
         # Update the service dropdown
         self.serviceCombobox['values'] = [service.cat_sv_name for service in services]
 
-        
-    
     def addService(self):
         # Get values from input fields
         categoryName = self.categoryCombobox.get()
@@ -753,6 +755,7 @@ class CleanerPage:
             # Add the service using the controller
             category_id = self.getCategoryIdByName(categoryName)
             service_id = self.getServiceIdByName(serviceName)
+            # Call addService method
             success = self.addServiceController.addService(self.user.user_id, category_id ,service_id, price, description)
 
             if success:
@@ -762,6 +765,53 @@ class CleanerPage:
                 messagebox.showerror("Error", "Failed to add service.")
         else:
             messagebox.showerror("Error", "All fields are required.")
+
+    def openUpdateServiceForm(self, cleaner_id, service_id, current_price, current_desc):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        print(f"Opening update form for cleaner_id: {cleaner_id}, service_id: {service_id}")
+
+        # Display form title
+        tk.Label(self.root, text="Edit Service", font=("Arial", 18)).pack(pady=20)
+
+        # Price input
+        tk.Label(self.root, text="New Price:").pack(pady=5)
+        self.priceEntry = tk.Entry(self.root)
+        self.priceEntry.insert(0, str(current_price))  # pre-fill with current price
+        self.priceEntry.pack(pady=5)
+
+        # Description input
+        tk.Label(self.root, text="New Description:").pack(pady=5)
+        self.descriptionEntry = tk.Entry(self.root)
+        self.descriptionEntry.insert(0, current_desc)  # pre-fill with current description
+        self.descriptionEntry.pack(pady=5)
+
+        # Update button
+        tk.Button(self.root, text="Update Service", command=lambda: self.updateService(cleaner_id, service_id)).pack(pady=20)
+
+
+    def updateService(self, cleaner_id, service_id):
+        self.updateServiceController = controller.UpdateServiceController()
+        new_price = self.priceEntry.get()
+        new_desc = self.descriptionEntry.get()
+
+        try:
+            new_price = str(new_price)
+            self.updateServiceController.updateService(
+                cleaner_id,
+                service_id,
+                new_price,
+                new_desc
+            )
+            messagebox.showinfo("Success", "Service updated successfully")
+            self.viewCleanerAllServices()
+
+
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Price must be a number.")
+
+
     
 
 

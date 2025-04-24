@@ -181,7 +181,7 @@ class CleanerService:
     def getCleanerServicesByUser(self, user_id):
         cursor = db.cursor()
         query = """
-            SELECT cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
+            SELECT cs.cleaner_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
             FROM cleaner_service cs
             JOIN categories_services s ON cs.service_id = s.catsv_id
             JOIN categories_services c ON cs.category_id = c.catsv_id
@@ -193,12 +193,38 @@ class CleanerService:
 
         result = []
         for row in services:
-            service_obj = CleanerService(price=row[0], description=row[1])  # price, description
-            service_obj.service_name = row[2]  # Now correctly setting the service_name
-            service_obj.category_name = row[3]  # If needed for further use
+            service_obj = CleanerService(
+                cleaner_id=row[0],
+                service_id=row[1],
+                price=row[2],
+                description=row[3]
+            )
+            service_obj.service_name = row[4]
+            service_obj.category_name = row[5]
             result.append(service_obj)
 
         return result
+    
+    def updateService(self, cleaner_id, service_id, new_price, new_description):
+        try:
+            print(f"Trying to update with cleaner_id={cleaner_id}, service_id={service_id}, new_price={new_price}, new_description={new_description}")
+            cursor = db.cursor()
+            query = """
+                UPDATE cleaner_service
+                SET price = %s, description = %s
+                WHERE cleaner_id = %s AND service_id = %s
+            """
+            cursor.execute(query, (new_price, new_description, cleaner_id, service_id))
+            db.commit()
+            if cursor.rowcount > 0:
+                print("Service updated successfully!")
+            else:
+             print("No service found with the provided cleaner_id and service_id.")
+        except Exception as e:
+            print(f"Error updating service: {e}")
+        finally:
+            cursor.close()
+
 
 
 

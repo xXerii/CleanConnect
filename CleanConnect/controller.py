@@ -1,6 +1,5 @@
 import entity
 
-
 class UserLoginController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
@@ -67,6 +66,7 @@ class UpdateProfileController:
     def updateProfile(self,role_id, new_role):
         return self.userProfile.updateProfile(role_id, new_role)
     
+    
 class AddServiceController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
@@ -96,4 +96,10 @@ class FetchCleanerAllServicesController:
         # Fetch all services with the associated cleaner and category info
         return self.cleanerService.getCleanerServicesByUser(user_id)
 
+class UpdateServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def updateService(self, cleaner_id, service_id, new_price, new_description):
+        return self.cleanerService.updateService(cleaner_id, service_id, new_price, new_description)
 
