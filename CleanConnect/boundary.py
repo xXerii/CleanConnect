@@ -632,7 +632,7 @@ class CleanerPage:
         table_frame.grid(row=1, column=0, columnspan=5, padx=40, pady=10, sticky="nsew")
 
         # Headers
-        headers = ["Service", "Price", "Description", "Actions"]
+        headers = ["Category", "Service", "Price", "Description", "Actions"]
         for col, header in enumerate(headers):
             tk.Label(table_frame, text=header, font=("Arial", 12, "bold"), borderwidth=1, relief="solid",
                     padx=10, pady=5, bg="#d3d3d3", fg="black").grid(row=0, column=col, sticky="nsew")
@@ -641,16 +641,18 @@ class CleanerPage:
         for row, service in enumerate(services, start=1):
             row_color = "#add8e6"
 
-            tk.Label(table_frame, text=service.service_name, borderwidth=1, relief="solid", padx=10, pady=5,
+            tk.Label(table_frame, text=service.category_name, borderwidth=1, relief="solid", padx=10, pady=5,
                     bg=row_color).grid(row=row, column=0, sticky="nsew")
-            tk.Label(table_frame, text=service.price, borderwidth=1, relief="solid", padx=10, pady=5,
+            tk.Label(table_frame, text=service.service_name, borderwidth=1, relief="solid", padx=10, pady=5,
                     bg=row_color).grid(row=row, column=1, sticky="nsew")
-            tk.Label(table_frame, text=service.description, borderwidth=1, relief="solid", padx=10, pady=5,
+            tk.Label(table_frame, text=service.price, borderwidth=1, relief="solid", padx=10, pady=5,
                     bg=row_color).grid(row=row, column=2, sticky="nsew")
+            tk.Label(table_frame, text=service.description, borderwidth=1, relief="solid", padx=10, pady=5,
+                    bg=row_color).grid(row=row, column=3, sticky="nsew")
 
             # Actions
             action_frame = tk.Frame(table_frame, bg=row_color)
-            action_frame.grid(row=row, column=3, sticky="nsew")
+            action_frame.grid(row=row, column=4, sticky="nsew")
 
             tk.Button(action_frame, text="Edit", command=lambda s=service: print("Dummy Edit clicked"),
                     font=("Arial", 10, "bold"), bg="#87CEEB", fg="black", relief="solid",
@@ -749,8 +751,9 @@ class CleanerPage:
 
         if categoryName and serviceName and price and description:
             # Add the service using the controller
+            category_id = self.getCategoryIdByName(categoryName)
             service_id = self.getServiceIdByName(serviceName)
-            success = self.addServiceController.addService(self.user.user_id, service_id, price, description)
+            success = self.addServiceController.addService(self.user.user_id, category_id ,service_id, price, description)
 
             if success:
                 messagebox.showinfo("Success", "Service added successfully!")

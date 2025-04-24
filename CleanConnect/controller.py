@@ -71,8 +71,8 @@ class AddServiceController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
 
-    def addService(self, cleaner_id, service_id, price, description):
-        return self.cleanerService.addService(cleaner_id, service_id, price, description)
+    def addService(self, cleaner_id, category_id, service_id, price, description):
+        return self.cleanerService.addService(cleaner_id, category_id, service_id, price, description)
 
 class FetchCategoriesController:
     def __init__(self):
