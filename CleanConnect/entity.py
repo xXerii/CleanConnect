@@ -157,21 +157,22 @@ class UserProfile:
         cursor.close()
 
 class CleanerService:
-    def __init__(self, clean_svc_id=None, cleaner_id=None, service_id=None, price=None, description=None):
+    def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None):
         self.clean_svc_id = clean_svc_id
-        self.cleaner_id = cleaner_id                  
+        self.cleaner_id = cleaner_id 
+        self.category_id = category_id                 
         self.service_id = service_id                    
         self.price = price
         self.description = description
         
-    def addService(self, cleaner_id, service_id, price, description):
-        print(f"Adding service with cleaner_id={cleaner_id}, service_id={service_id}, price={price}, description={description}")
+    def addService(self, cleaner_id, category_id, service_id, price, description):
+        print(f"Adding service with cleaner_id={cleaner_id}, category_id={category_id}, service_id={service_id}, price={price}, description={description}")
         cursor = db.cursor()
         query = """
-            INSERT INTO cleaner_service (cleaner_id, service_id, price, description)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO cleaner_service (cleaner_id, category_id,service_id, price, description)
+            VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (cleaner_id, service_id, price, description))
+        cursor.execute(query, (cleaner_id, category_id, service_id, price, description))
         db.commit()
         cursor.close()
 
@@ -180,9 +181,10 @@ class CleanerService:
     def getCleanerServicesByUser(self, user_id):
         cursor = db.cursor()
         query = """
-            SELECT cs.price, cs.description, c.`cat/sv_name` AS service_name
+            SELECT cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
             FROM cleaner_service cs
-            JOIN categories_services c ON cs.service_id = c.catsv_id
+            JOIN categories_services s ON cs.service_id = s.catsv_id
+            JOIN categories_services c ON cs.category_id = c.catsv_id
             WHERE cs.cleaner_id = %s
         """
         cursor.execute(query, (user_id,))
@@ -193,6 +195,7 @@ class CleanerService:
         for row in services:
             service_obj = CleanerService(price=row[0], description=row[1])  # price, description
             service_obj.service_name = row[2]  # Now correctly setting the service_name
+            service_obj.category_name = row[3]  # If needed for further use
             result.append(service_obj)
 
         return result
