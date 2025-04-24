@@ -608,7 +608,8 @@ class CleanerPage:
     
     def displayMyServicesPage(self):
         # Create controller instance
-        self.fetchService = controller.FetchCleanerAllServicesController()
+        self.fetchServiceController = controller.FetchCleanerAllServicesController()
+        self.searchSeriveController = controller.SearchServiceController()
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -637,14 +638,17 @@ class CleanerPage:
         def perform_search():
             query = self.search_entry.get().strip()
             if query:
-                filtered = self.serviceController.searchCleanerServices(self.user.user_id, query)
+                filtered = self.searchSeriveController.searchService(query, self.user.user_id)
                 render_table(filtered)
+        
+        # Fetch all services for this cleaner
+        all_services = self.fetchServiceController.fetchCleanerAllService(self.user.user_id)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(
             search_frame,
             text="Reset",
-            command=lambda: render_table(self.all_services)
+            command=lambda: render_table(all_services)
         ).grid(row=0, column=3, padx=5)
 
         # Table Frame
@@ -738,13 +742,11 @@ class CleanerPage:
                     pady=5
                 ).grid(row=0, column=1, padx=5, pady=5)
 
-        # Fetch all services for this cleaner
-        all_services = self.fetchService.fetchCleanerAllService(self.user.user_id)
         render_table(all_services)
 
         # Navigation Buttons (bottom)
         btn_frame = tk.Frame(self.root, bg="#f0f2f5")
-        btn_frame.grid(row=2, column=0, columnspan=5, pady=30)
+        btn_frame.grid(row=3, column=0, columnspan=5, pady=30)
         tk.Button(
             btn_frame,
             text="Back to Dashboard",

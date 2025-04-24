@@ -114,6 +114,6 @@ class SearchServiceController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
 
-    def searchService(self, search_query):
-        return self.cleanerService.searchCleanerServices(search_query)
+    def searchService(self, search_query,cleaner_id):
+        return self.cleanerService.searchCleanerServices(search_query, cleaner_id)
 

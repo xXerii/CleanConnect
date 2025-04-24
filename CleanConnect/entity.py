@@ -157,13 +157,15 @@ class UserProfile:
         cursor.close()
 
 class CleanerService:
-    def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None):
+    def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None, service_name=None, category_name=None):
         self.clean_svc_id = clean_svc_id
         self.cleaner_id = cleaner_id 
         self.category_id = category_id                 
         self.service_id = service_id                    
         self.price = price
         self.description = description
+        self.service_name = service_name
+        self.category_name = category_name
         
     def addService(self, cleaner_id, category_id, service_id, price, description):
         print(f"Adding service with cleaner_id={cleaner_id}, category_id={category_id}, service_id={service_id}, price={price}, description={description}")
@@ -252,22 +254,22 @@ class CleanerService:
         finally:
             cursor.close()
         
-    def searchCleanerServices(self, search_query):
+    def searchCleanerServices(self, search_query,cleaner_id):
         cursor = db.cursor()
         query = """
                 SELECT cs.clean_svc_id, cs.cleaner_id, cs.category_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
                 FROM `cleaner_service` cs
                 JOIN `categories_services` s ON cs.service_id = s.`catsv_id`
                 JOIN `categories_services` c ON cs.category_id = c.`catsv_id`
-                WHERE s.`cat/sv_name` LIKE %s
+                WHERE s.`cat/sv_name` LIKE %s AND cs.cleaner_id = %s
         """
-        cursor.execute(query, (f"%{search_query}%",))
+        cursor.execute(query, (f"%{search_query}%",cleaner_id))
         services = cursor.fetchall()
         cursor.close()
 
         service_list = []
         for service in services:
-            service_list.append(CleanerService(service[0], service[1], service[2], service[3], service[4], service[5]))
+            service_list.append(CleanerService(service[0], service[1], service[2], service[3], service[4], service[5], service[6], service[7]))
         return service_list
 
 
