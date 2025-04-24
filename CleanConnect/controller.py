@@ -103,3 +103,10 @@ class UpdateServiceController:
     def updateService(self, cleaner_id, service_id, new_price, new_description):
         return self.cleanerService.updateService(cleaner_id, service_id, new_price, new_description)
 
+class DeleteServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def deleteService(self, cleaner_id, service_id):
+        return self.cleanerService.deleteService(cleaner_id, service_id)
+

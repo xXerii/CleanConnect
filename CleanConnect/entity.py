@@ -107,11 +107,11 @@ class UserAccount:
         uid, name, username, email, pw, role, suspended = row
         return UserAccount(uid, name, username, email, pw, role, suspended)
         
-    def setSuspended(self, id: int, suspended: bool):
+    def setSuspended(self, user_id: int, suspended: bool):
         cursor = db.cursor()
         cursor.execute(
             "UPDATE useraccounts SET suspended=%s WHERE user_id=%s",
-            (1 if suspended else 0, id)
+            (1 if suspended else 0, user_id)
         )
         db.commit()
         cursor.close()
@@ -225,7 +225,32 @@ class CleanerService:
         finally:
             cursor.close()
 
-
+    def deleteService(self, cleaner_id, service_id):
+        try:
+            cursor = db.cursor()
+            # Use sub queries to delete 
+            query = """ 
+                DELETE FROM cleaner_service
+                WHERE clean_svc_id = (
+                SELECT clean_svc_id
+                FROM cleaner_service
+                WHERE cleaner_id = %s AND service_id = %s
+                LIMIT 1
+                )
+             """
+            cursor.execute(query, (cleaner_id, service_id))
+            db.commit()
+            if cursor.rowcount > 0:
+                print(f"Service with cleaner_id={cleaner_id} and service_id={service_id} deleted successfully!")
+                return True
+            else:
+                print(f"No service found with cleaner_id={cleaner_id} and service_id={service_id}")
+                return False
+        except Exception as e:
+            print(f"Error deleting service: {e}")
+            return False
+        finally:
+            cursor.close()
 
 
 class CategoryService:

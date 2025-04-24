@@ -663,7 +663,7 @@ class CleanerPage:
                     font=("Arial", 10, "bold"), bg="#87CEEB", fg="black", relief="solid",
                     padx=10, pady=5).grid(row=0, column=0, padx=5, pady=5)
 
-            tk.Button(action_frame, text="Delete", command=lambda s=service: print("Dummy Delete clicked"),
+            tk.Button(action_frame, text="Delete", command=lambda service=service: self.deleteService(service.cleaner_id, service.service_id),
                     font=("Arial", 10, "bold"), bg="#FF7F7F", fg="black", relief="solid",
                     padx=10, pady=5).grid(row=0, column=1, padx=5, pady=5)
 
@@ -810,6 +810,19 @@ class CleanerPage:
 
         except ValueError:
             messagebox.showerror("Invalid Input", "Price must be a number.")
+    
+    def deleteService(self, cleaner_id, service_id):
+        try:
+            self.deleteServiceController = controller.DeleteServiceController()
+            success = self.deleteServiceController.deleteService(cleaner_id, service_id)
+            if success:
+                messagebox.showinfo("Success", "Service deleted successfully!")
+                self.viewCleanerAllServices()
+            else:
+                messagebox.showerror("Error", "Failed to delete service.")
+        except Exception as e:
+            messagebox.showerror("Exception", f"An error occurred: {e}")
+
 
 
     
