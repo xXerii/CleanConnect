@@ -190,11 +190,11 @@ class CleanerService:
             WHERE cs.cleaner_id = %s
         """
         cursor.execute(query, (user_id,))
-        services = cursor.fetchall()
+        rows = cursor.fetchall()
         cursor.close()
 
-        result = []
-        for row in services:
+        services = []
+        for row in rows:
             service_obj = CleanerService(
                 cleaner_id=row[0],
                 service_id=row[1],
@@ -203,9 +203,9 @@ class CleanerService:
             )
             service_obj.service_name = row[4]
             service_obj.category_name = row[5]
-            result.append(service_obj)
+            services.append(service_obj)
 
-        return result
+        return services
     
     def updateService(self, cleaner_id, service_id, new_price, new_description):
         try:

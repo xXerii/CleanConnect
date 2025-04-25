@@ -643,6 +643,8 @@ class CleanerPage:
         
         # Fetch all services for this cleaner
         all_services = self.fetchServiceController.fetchCleanerAllService(self.user.user_id)
+        print("Fetched services:", all_services)
+        print("Fetched id:", self.user.user_id)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(
@@ -890,7 +892,7 @@ class CleanerPage:
                 new_desc
             )
             messagebox.showinfo("Success", "Service updated successfully")
-            self.viewCleanerAllServices()
+            self.displayMyServicesPage()
 
 
         except ValueError:
@@ -902,7 +904,7 @@ class CleanerPage:
             success = self.deleteServiceController.deleteService(cleaner_id, service_id)
             if success:
                 messagebox.showinfo("Success", "Service deleted successfully!")
-                self.viewCleanerAllServices()
+                self.displayMyServicesPage()
             else:
                 messagebox.showerror("Error", "Failed to delete service.")
         except Exception as e:
