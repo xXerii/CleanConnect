@@ -96,4 +96,14 @@ class FetchCleanerAllServicesController:
         # Fetch all services with the associated cleaner and category info
         return self.cleanerService.getCleanerServicesByUser(user_id)
 
+class JobHistoryController:
+    def __init__(self):
+        self.cleaner_service = entity.CleanerService()
+
+    def fetchJobHistory(self, cleaner_id):
+        """
+        Fetch job history for a specific cleaner.
+        """
+        return self.cleaner_service.getJobHistoryByCleaner(cleaner_id)
+
 
