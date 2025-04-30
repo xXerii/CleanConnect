@@ -301,14 +301,6 @@ class CleanerService:
             })
 
         return job_history
-    
-    class FetchCategoriesController:
-        def __init__(self):
-            self.category_service = entity.CategoryService()
-
-        def fetchCategories(self):
-            return self.category_service.getAllCategories()
-
 
 
 class CategoryService:
