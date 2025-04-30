@@ -127,4 +127,19 @@ class JobHistoryController:
         """
         return self.cleaner_service.getJobHistoryByCleaner(cleaner_id)
 
+class CleanerAnalyticsController:
+    def __init__(self):
+        self.model = entity.CleanerAnalytics()
 
+    # façade methods used by the UI
+    def logView(self, cleaner_id, viewer_id):
+        self.model.log_view(cleaner_id, viewer_id)
+
+    def toggleShortlist(self, cleaner_id, homeowner_id):
+        self.model.toggle_shortlist(cleaner_id, homeowner_id)
+
+    def getCounts(self, cleaner_id):
+        return {
+            "views":      self.model.view_count(cleaner_id),
+            "shortlists": self.model.shortlist_count(cleaner_id),
+        }

@@ -324,4 +324,61 @@ class CategoryService:
         return [CategoryService(*row) for row in rows]
 
         
+class CleanerAnalytics:
+    """Logs views & short-lists and returns live counts."""
+    def __init__(self):
+        self.conn = db
+
+    # -------- profile views --------
+    def log_view(self, cleaner_id, viewer_id):
+        cur = self.conn.cursor()
+        cur.execute(
+            "INSERT INTO profile_view (cleaner_id, viewer_id) VALUES (%s,%s)",
+            (cleaner_id, viewer_id)
+        )
+        self.conn.commit();  cur.close()
+
+    def view_count(self, cleaner_id):
+        cur = self.conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM profile_view WHERE cleaner_id=%s",
+                    (cleaner_id,))
+        cnt = cur.fetchone()[0];  cur.close()
+        return cnt
+
+    # -------- short-lists ----------
+    def toggle_shortlist(self, cleaner_id, homeowner_id):
+        cur = self.conn.cursor()
+        cur.execute("""SELECT 1 FROM shortlist
+                       WHERE cleaner_id=%s AND homeowner_id=%s""",
+                    (cleaner_id, homeowner_id))
+        if cur.fetchone():
+            cur.execute("""DELETE FROM shortlist
+                           WHERE cleaner_id=%s AND homeowner_id=%s""",
+                        (cleaner_id, homeowner_id))
+        else:
+            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id)
+                           VALUES (%s,%s)""",
+                        (cleaner_id, homeowner_id))
+        self.conn.commit();  cur.close()
+
+    def shortlist_count(self, cleaner_id):
+        cur = self.conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM shortlist WHERE cleaner_id=%s",
+                    (cleaner_id,))
+        cnt = cur.fetchone()[0];  cur.close()
+        return cnt
+
+    def shortlist_count_for_user(self, cleaner_id, homeowner_id):
+        cur = self.conn.cursor()
+        cur.execute("SELECT 1 FROM shortlist "
+                    "WHERE cleaner_id=%s AND homeowner_id=%s",
+                    (cleaner_id, homeowner_id))
+        exists = cur.fetchone()
+        cur.close()
+        return bool(exists)
+
+
+
+
+
 # RANDOM STUFF FOR CI TESTING PLEASE IGNORE
