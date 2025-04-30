@@ -117,3 +117,14 @@ class SearchServiceController:
     def searchService(self, search_query,cleaner_id):
         return self.cleanerService.searchCleanerServices(search_query, cleaner_id)
 
+class JobHistoryController:
+    def __init__(self):
+        self.cleaner_service = entity.CleanerService()
+
+    def fetchJobHistory(self, cleaner_id):
+        """
+        Fetch job history for a specific cleaner.
+        """
+        return self.cleaner_service.getJobHistoryByCleaner(cleaner_id)
+
+

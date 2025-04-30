@@ -271,6 +271,43 @@ class CleanerService:
         for service in services:
             service_list.append(CleanerService(service[0], service[1], service[2], service[3], service[4], service[5], service[6], service[7]))
         return service_list
+    
+    def getJobHistoryByCleaner(self, cleaner_id):
+        cursor = db.cursor()
+        query = """
+            SELECT 
+            jh.cleaner_id, jh.booked_by, c.`cat/sv_name` AS service_provided, jh.total_charged,
+            jh.booked_at
+            FROM job_history jh
+            JOIN categories_services c 
+            ON jh.service_id = c.catsv_id
+            WHERE jh.cleaner_id = %s
+            ORDER BY 
+            STR_TO_DATE(jh.booked_at, '%d/%m/%y') ASC
+        """
+        cursor.execute(query, (cleaner_id,))
+        result = cursor.fetchall()
+        cursor.close()
+
+        # Convert tuples to dictionaries
+        job_history = []
+        for row in result:
+            job_history.append({
+                "cleaner_id": row[0],
+                "booked_by": row[1],
+                "service_provided": row[2],
+                "total_charged": row[3],
+                "booked_at": row[4]
+            })
+
+        return job_history
+    
+    class FetchCategoriesController:
+        def __init__(self):
+            self.category_service = entity.CategoryService()
+
+        def fetchCategories(self):
+            return self.category_service.getAllCategories()
 
 
 
@@ -294,12 +331,5 @@ class CategoryService:
         cursor.close()
         return [CategoryService(*row) for row in rows]
 
-
-
         
-
-
-
-
-
 # RANDOM STUFF FOR CI TESTING PLEASE IGNORE
