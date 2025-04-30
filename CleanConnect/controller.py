@@ -1,6 +1,5 @@
 import entity
 
-
 class UserLoginController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
@@ -67,12 +66,13 @@ class UpdateProfileController:
     def updateProfile(self,role_id, new_role):
         return self.userProfile.updateProfile(role_id, new_role)
     
+    
 class AddServiceController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
 
-    def addService(self, cleaner_id, service_id, price, description):
-        return self.cleanerService.addService(cleaner_id, service_id, price, description)
+    def addService(self, cleaner_id, category_id, service_id, price, description):
+        return self.cleanerService.addService(cleaner_id, category_id, service_id, price, description)
 
 class FetchCategoriesController:
     def __init__(self):
@@ -96,4 +96,50 @@ class FetchCleanerAllServicesController:
         # Fetch all services with the associated cleaner and category info
         return self.cleanerService.getCleanerServicesByUser(user_id)
 
+class UpdateServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
 
+    def updateService(self, cleaner_id, service_id, new_price, new_description):
+        return self.cleanerService.updateService(cleaner_id, service_id, new_price, new_description)
+
+class DeleteServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def deleteService(self, cleaner_id, service_id):
+        return self.cleanerService.deleteService(cleaner_id, service_id)
+    
+class SearchServiceController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def searchService(self, search_query,cleaner_id):
+        return self.cleanerService.searchCleanerServices(search_query, cleaner_id)
+
+class JobHistoryController:
+    def __init__(self):
+        self.cleaner_service = entity.CleanerService()
+
+    def fetchJobHistory(self, cleaner_id):
+        """
+        Fetch job history for a specific cleaner.
+        """
+        return self.cleaner_service.getJobHistoryByCleaner(cleaner_id)
+
+class CleanerAnalyticsController:
+    def __init__(self):
+        self.model = entity.CleanerAnalytics()
+
+    # façade methods used by the UI
+    def logView(self, cleaner_id, viewer_id):
+        self.model.log_view(cleaner_id, viewer_id)
+
+    def toggleShortlist(self, cleaner_id, homeowner_id):
+        self.model.toggle_shortlist(cleaner_id, homeowner_id)
+
+    def getCounts(self, cleaner_id):
+        return {
+            "views":      self.model.view_count(cleaner_id),
+            "shortlists": self.model.shortlist_count(cleaner_id),
+        }

@@ -179,7 +179,7 @@ class AdminPage:
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id), font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
 
                 status = "Suspended" if account.suspended else "Active"
-                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=3, sticky="nsew")
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row_count, column=3, sticky="nsew")
 
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
@@ -497,7 +497,7 @@ class AdminPage:
                 tk.Label(table_frame, text=profile.role, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=1, sticky="nsew")
 
                 status = "Suspended" if profile.suspended else "Active"
-                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row_count, column=2, sticky="nsew")
 
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
@@ -598,76 +598,173 @@ class CleanerPage:
         Label(self.root, text=f"Cleaner Dashboard", font=("Arial", 24)).pack(pady=30)
         Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+        # live metrics
+        counts = controller.CleanerAnalyticsController().getCounts(self.user.user_id)
+        tk.Label(self.root, text=f"Profile views: {counts['views']}").pack()
+        tk.Label(self.root, text=f"Times shortlisted: {counts['shortlists']}").pack(pady=(0,10))
 
-        # Add Admin features here
-        Button(self.root, text="View Services", command=self.viewCleanerAllServices).pack(pady=5)
-        Button(self.root, text="Add Services", command=self.createCategoryServiceForm).pack(pady=5)
-        Button(self.root, text="View Interest Metrics", command=dummy).pack(pady=5)
-
+        
+        Button(self.root, text="View Services", command=self.displayMyServicesPage).pack(pady=5)
+        Button(self.root, text="Add Services", command=self.openCreateServiceForm).pack(pady=5)
+        Button(self.root, text="View Job History", command=self.viewJobHistory).pack(pady=5)
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
     
-    def getCleanerServices(self):
-        self.fetchCleanerAllServicesController = controller.FetchCleanerAllServicesController()
-        cleaner_services = self.fetchCleanerAllServicesController.fetchCleanerAllService
-        return cleaner_services(self.user.user_id)
-
-    def viewCleanerAllServices(self):
-        services = self.getCleanerServices()
-        print(self.user.user_id)
-
-        # Clear the current screen
+    def displayMyServicesPage(self):
+        # Create controller instance
+        self.fetchServiceController = controller.FetchCleanerAllServicesController()
+        self.searchSeriveController = controller.SearchServiceController()
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Set background color
+        # Configure background
         self.root.configure(bg="#f0f2f5")
 
-        # Title
-        title = tk.Label(self.root, text="All My Services", font=("Arial", 24, "bold"),
-                        bg="#f0f2f5", fg="#333")
-        title.grid(row=0, column=0, columnspan=5, pady=(30, 10))
+        # Title Frame
+        title_frame = tk.Frame(self.root, bg="#f0f2f5")
+        title_frame.grid(row=0, column=0, columnspan=5, pady=30)
+        tk.Label(
+            title_frame,
+            text="My Services",
+            font=("Arial", 24, "bold"),
+            bg="#f0f2f5",
+            fg="#333"
+        ).grid(row=0, column=0, padx=200)
+
+        # Search Frame
+        search_frame = tk.Frame(self.root, bg="#f0f2f5")
+        search_frame.grid(row=1, column=0, columnspan=5, pady=10)
+        search_var = tk.StringVar()
+        tk.Label(search_frame, text="Search Service:", bg="#f0f2f5").grid(row=0, column=0, padx=5)
+        self.search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
+        self.search_entry.grid(row=0, column=1, padx=5)
+
+        def perform_search():
+            query = self.search_entry.get().strip()
+            if query:
+                filtered = self.searchSeriveController.searchService(query, self.user.user_id)
+                render_table(filtered)
+        
+        # Fetch all services for this cleaner
+        all_services = self.fetchServiceController.fetchCleanerAllService(self.user.user_id)
+        print("Fetched services:", all_services)
+        print("Fetched id:", self.user.user_id)
+
+        tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
+        tk.Button(
+            search_frame,
+            text="Reset",
+            command=lambda: render_table(all_services)
+        ).grid(row=0, column=3, padx=5)
 
         # Table Frame
         table_frame = tk.Frame(self.root, bg="#add8e6")
-        table_frame.grid(row=1, column=0, columnspan=5, padx=40, pady=10, sticky="nsew")
+        table_frame.grid(row=2, column=0, columnspan=5, padx=30, pady=10, sticky="nsew")
 
-        # Headers
-        headers = ["Service", "Price", "Description", "Actions"]
-        for col, header in enumerate(headers):
-            tk.Label(table_frame, text=header, font=("Arial", 12, "bold"), borderwidth=1, relief="solid",
-                    padx=10, pady=5, bg="#d3d3d3", fg="black").grid(row=0, column=col, sticky="nsew")
+        # Nested function to render table with original styling
+        def render_table(services):
+            # Clear previous rows
+            for widget in table_frame.winfo_children():
+                widget.destroy()
 
-        # Service Rows
-        for row, service in enumerate(services, start=1):
-            row_color = "#add8e6"
+            # Headers
+            headers = ["Category", "Service", "Price", "Description", "Actions"]
+            for col, header in enumerate(headers):
+                tk.Label(
+                    table_frame,
+                    text=header,
+                    font=("Arial", 12, "bold"),
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg="#d3d3d3",
+                    fg="black"
+                ).grid(row=0, column=col, sticky="nsew")
 
-            tk.Label(table_frame, text=service.service_name, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=0, sticky="nsew")
-            tk.Label(table_frame, text=service.price, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=1, sticky="nsew")
-            tk.Label(table_frame, text=service.description, borderwidth=1, relief="solid", padx=10, pady=5,
-                    bg=row_color).grid(row=row, column=2, sticky="nsew")
+            # Rows
+            for row, svc in enumerate(services, start=1):
+                row_color = "#add8e6"
+                tk.Label(
+                    table_frame,
+                    text=svc.category_name,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=0, sticky="nsew")
+                tk.Label(
+                    table_frame,
+                    text=svc.service_name,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=1, sticky="nsew")
+                tk.Label(
+                    table_frame,
+                    text=svc.price,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=2, sticky="nsew")
+                tk.Label(
+                    table_frame,
+                    text=svc.description,
+                    borderwidth=1,
+                    relief="solid",
+                    padx=10,
+                    pady=5,
+                    bg=row_color
+                ).grid(row=row, column=3, sticky="nsew")
 
-            # Actions
-            action_frame = tk.Frame(table_frame, bg=row_color)
-            action_frame.grid(row=row, column=3, sticky="nsew")
+                # Actions
+                action_frame = tk.Frame(table_frame, bg=row_color)
+                action_frame.grid(row=row, column=4, sticky="nsew")
+                tk.Button(
+                    action_frame,
+                    text="Edit",
+                    command=lambda s=svc: self.openUpdateServiceForm(s.cleaner_id, s.service_id, s.price, s.description),
+                    font=("Arial", 10, "bold"),
+                    bg="#87CEEB",
+                    fg="black",
+                    relief="solid",
+                    padx=10,
+                    pady=5
+                ).grid(row=0, column=0, padx=5, pady=5)
+                tk.Button(
+                    action_frame,
+                    text="Delete",
+                    command=lambda s=svc: self.deleteService(s.cleaner_id, s.service_id),
+                    font=("Arial", 10, "bold"),
+                    bg="#FF7F7F",
+                    fg="black",
+                    relief="solid",
+                    padx=10,
+                    pady=5
+                ).grid(row=0, column=1, padx=5, pady=5)
 
-            tk.Button(action_frame, text="Edit", command=lambda s=service: print("Dummy Edit clicked"),
-                    font=("Arial", 10, "bold"), bg="#87CEEB", fg="black", relief="solid",
-                    padx=10, pady=5).grid(row=0, column=0, padx=5, pady=5)
-
-            tk.Button(action_frame, text="Delete", command=lambda s=service: print("Dummy Delete clicked"),
-                    font=("Arial", 10, "bold"), bg="#FF7F7F", fg="black", relief="solid",
-                    padx=10, pady=5).grid(row=0, column=1, padx=5, pady=5)
+        render_table(all_services)
 
         # Navigation Buttons (bottom)
         btn_frame = tk.Frame(self.root, bg="#f0f2f5")
-        btn_frame.grid(row=2, column=0, columnspan=5, pady=30)
+        btn_frame.grid(row=3, column=0, columnspan=5, pady=30)
+        tk.Button(
+            btn_frame,
+            text="Back to Dashboard",
+            command=self.displayCleanerPage,
+            font=("Arial", 12, "bold"),
+            bg="#A9A9A9",
+            fg="black",
+            padx=20,
+            pady=10
+        ).grid(row=0, column=0, padx=10)
 
-        tk.Button(btn_frame, text="Back to Dashboard", command=self.displayCleanerPage,
-                font=("Arial", 12, "bold"), bg="#A9A9A9", fg="black", padx=20, pady=10).grid(row=0, column=0, padx=10)
         
-    def createCategoryServiceForm(self):
+    def openCreateServiceForm(self):
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -684,7 +781,7 @@ class CleanerPage:
         self.categoryCombobox['values'] = [cat.cat_sv_name for cat in categories]
         self.categoryCombobox.bind("<<ComboboxSelected>>", self.onCategorySelected)
 
-        # Service selection (Dropdown) - initially empty
+        # Service selection (Dropdown
         self.serviceCombobox = ttk.Combobox(self.root, state="readonly")
         self.serviceCombobox.pack(pady=5)
 
@@ -700,6 +797,8 @@ class CleanerPage:
 
         # Submit button
         tk.Button(self.root, text="Add Service", command=self.addService).pack(pady=20)
+
+        tk.Button(self.root, text="Back", command=self.displayCleanerPage).pack(pady=20)
 
     def getCategoryIdByName(self, categoryName):
         # Return category ID based on category name
@@ -724,7 +823,6 @@ class CleanerPage:
                 return service.catsv_id
         return None
 
-
     def onCategorySelected(self,event):
         # Fetch and display services based on the selected category
         selectedCategory = self.categoryCombobox.get()
@@ -738,8 +836,6 @@ class CleanerPage:
         # Update the service dropdown
         self.serviceCombobox['values'] = [service.cat_sv_name for service in services]
 
-        
-    
     def addService(self):
         # Get values from input fields
         categoryName = self.categoryCombobox.get()
@@ -749,8 +845,10 @@ class CleanerPage:
 
         if categoryName and serviceName and price and description:
             # Add the service using the controller
+            category_id = self.getCategoryIdByName(categoryName)
             service_id = self.getServiceIdByName(serviceName)
-            success = self.addServiceController.addService(self.user.user_id, service_id, price, description)
+            # Call addService method
+            success = self.addServiceController.addService(self.user.user_id, category_id ,service_id, price, description)
 
             if success:
                 messagebox.showinfo("Success", "Service added successfully!")
@@ -759,8 +857,166 @@ class CleanerPage:
                 messagebox.showerror("Error", "Failed to add service.")
         else:
             messagebox.showerror("Error", "All fields are required.")
-    
 
+    def openUpdateServiceForm(self, cleaner_id, service_id, current_price, current_desc):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        print(f"Opening update form for cleaner_id: {cleaner_id}, service_id: {service_id}")
+
+        # Display form title
+        tk.Label(self.root, text="Edit Service", font=("Arial", 18)).pack(pady=20)
+
+        # Price input
+        tk.Label(self.root, text="New Price:").pack(pady=5)
+        self.priceEntry = tk.Entry(self.root)
+        self.priceEntry.insert(0, str(current_price))  # pre-fill with current price
+        self.priceEntry.pack(pady=5)
+
+        # Description input
+        tk.Label(self.root, text="New Description:").pack(pady=5)
+        self.descriptionEntry = tk.Entry(self.root)
+        self.descriptionEntry.insert(0, current_desc)  # pre-fill with current description
+        self.descriptionEntry.pack(pady=5)
+
+        # Update button
+        tk.Button(self.root, text="Update Service", command=lambda: self.updateService(cleaner_id, service_id)).pack(pady=20)
+
+
+    def updateService(self, cleaner_id, service_id):
+        self.updateServiceController = controller.UpdateServiceController()
+        new_price = self.priceEntry.get()
+        new_desc = self.descriptionEntry.get()
+
+        try:
+            new_price = str(new_price)
+            self.updateServiceController.updateService(
+                cleaner_id,
+                service_id,
+                new_price,
+                new_desc
+            )
+            messagebox.showinfo("Success", "Service updated successfully")
+            self.displayMyServicesPage()
+
+
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Price must be a number.")
+    
+    def deleteService(self, cleaner_id, service_id):
+        try:
+            self.deleteServiceController = controller.DeleteServiceController()
+            success = self.deleteServiceController.deleteService(cleaner_id, service_id)
+            if success:
+                messagebox.showinfo("Success", "Service deleted successfully!")
+                self.displayMyServicesPage()
+            else:
+                messagebox.showerror("Error", "Failed to delete service.")
+        except Exception as e:
+            messagebox.showerror("Exception", f"An error occurred: {e}")
+
+
+
+    
+    def viewJobHistory(self):
+        # Create a controller instance to fetch job history
+        self.jobHistoryController = controller.JobHistoryController()
+
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Set default background color
+        self.root.configure(bg="#f0f2f5")  # Light background
+
+        # Header
+        tk.Label(self.root, text="Job History", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
+
+        # Filter Frame
+        filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
+        filter_frame.pack(pady=10)
+
+        # Date Filter Dropdown
+        tk.Label(filter_frame, text="Sort by Date:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        self.date_sort_var = tk.StringVar(value="None")
+        date_sort_dropdown = ttk.Combobox(filter_frame, textvariable=self.date_sort_var, state="readonly", width=15)
+        date_sort_dropdown['values'] = ["None", "Ascending", "Descending"]
+        date_sort_dropdown.grid(row=0, column=1, padx=5)
+
+        # Service Type Filter Dropdown
+        tk.Label(filter_frame, text="Filter by Service Type:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=2, padx=5)
+        self.service_filter_var = tk.StringVar(value="All")
+        service_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.service_filter_var, state="readonly", width=20)
+        service_filter_dropdown['values'] = ["All", "Steam Cleaning", "Extraction", "Leather Cleaning", "Kitchen Deep Clean", "Bathroom Scrub Down", "Bedroom Deep Clean", "UV-C Cleaning"]
+        service_filter_dropdown.grid(row=0, column=3, padx=5)
+
+        # Apply Filter Button
+        tk.Button(filter_frame, text="Apply Filters", command=self.applyFilters, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=4, padx=10)
+
+        # Table Frame
+        self.table_frame = tk.Frame(self.root, bg="#ffffff", bd=2, relief="solid")  # White table background
+        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        # Fetch and display job history
+        self.displayJobHistory()
+
+        # Back to Dashboard Button
+        Button(self.root, text="Back to Dashboard", command=self.displayCleanerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+        
+    def applyFilters(self):
+        # Get selected filters
+        date_sort = self.date_sort_var.get()
+        service_filter = self.service_filter_var.get()
+
+        # Fetch filtered job history
+        try:
+            job_history = self.jobHistoryController.fetchJobHistory(self.user.user_id)
+
+            # Apply service type filter
+            if service_filter != "All":
+                # Ensure case-insensitive comparison and strip any extra whitespace
+                job_history = [job for job in job_history if job['service_provided'].strip().lower() == service_filter.strip().lower()]
+
+            # Apply date sort filter
+            if date_sort == "Ascending":
+                job_history.sort(key=lambda x: x['booked_at'])
+            elif date_sort == "Descending":
+                job_history.sort(key=lambda x: x['booked_at'], reverse=True)
+
+            # Update the table
+            self.displayJobHistory(job_history)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to apply filters: {e}")
+
+    def displayJobHistory(self, job_history=None):
+        if job_history is None:
+            try:
+                job_history = self.jobHistoryController.fetchJobHistory(self.user.user_id)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to fetch job history: {e}")
+                return
+
+        # Clear the table frame
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+        # Check if job history is empty
+        if not job_history:
+            tk.Label(self.table_frame, text="No job history found.", font=("Arial", 12), bg="#ffffff", fg="black").pack(pady=20)
+            return
+
+        # Table Headers
+        headers = ["No.", "Booked By", "Service Provided", "Total Charged", "Booked At"]
+        for col, header in enumerate(headers):
+            tk.Label(self.table_frame, text=header, font=("Arial", 12, "bold"), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=0, column=col, sticky="nsew")
+
+        # Table Rows
+        for row_num, job in enumerate(job_history, start=1):
+            tk.Label(self.table_frame, text=row_num, font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=0, sticky="nsew")
+            tk.Label(self.table_frame, text=job["booked_by"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=1, sticky="nsew")  # Booked By
+            tk.Label(self.table_frame, text=job["service_provided"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=2, sticky="nsew")  # Service Provided
+            tk.Label(self.table_frame, text=job["total_charged"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=3, sticky="nsew")  # Total Charged
+            tk.Label(self.table_frame, text=job["booked_at"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=4, sticky="nsew")  # Booked At
 
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
@@ -775,6 +1031,8 @@ class HomeOwnerPage:
         self.root = root
         self.user = user
         self.displayHomeOwnerPage()
+        self.analyticsCtl = controller.CleanerAnalyticsController()
+
 
     def displayHomeOwnerPage(self):
         for widget in self.root.winfo_children():
@@ -785,9 +1043,74 @@ class HomeOwnerPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Cleaners Available", command=dummy).pack(pady=5)
+        Button(self.root, text="View Cleaners Available",
+            command=self.displayCleanersPage).pack(pady=5)
+
+
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def displayCleanersPage(self):
+        # wipe current widgets
+        for w in self.root.winfo_children():
+            w.destroy()
+
+        tk.Label(self.root,
+                text="Available Cleaners",
+                font=("Arial", 24)).pack(pady=20)
+
+        table = tk.Frame(self.root, bg="#add8e6")
+        table.pack(padx=40, pady=10)
+
+        cleaners = controller.ViewAccountsController().viewAccounts()
+
+        headers = ["Cleaner", "Actions"]
+        for col, h in enumerate(headers):
+            tk.Label(table, text=h, font=("Arial", 12, "bold"),
+                    bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+
+        row = 1
+        for c in cleaners:
+            if c.role_id != 2:   # only cleaners
+                continue
+
+            # name
+            tk.Label(table, text=c.username, bg="#add8e6", width=20)\
+            .grid(row=row, column=0, pady=5)
+
+            # fetch current shortlist status once per cleaner
+            countsCtl = controller.CleanerAnalyticsController()
+            is_shortlisted = countsCtl.model.shortlist_count_for_user(
+                                cleaner_id=c.user_id,
+                                homeowner_id=self.user.user_id)
+
+            btn_text = "Remove from shortlist" if is_shortlisted else "Shortlist"
+
+            # frame to hold the two buttons
+            action = tk.Frame(table, bg="#add8e6")
+            action.grid(row=row, column=1, pady=5)
+
+            def open_profile(uid=c.user_id):
+                countsCtl.logView(uid, self.user.user_id)
+                # in a real app you'd show profile details here
+                messagebox.showinfo("Profile", f"Opened cleaner {uid}'s profile")
+
+            tk.Button(action, text="Open profile",
+                    command=open_profile, width=16).pack(side="left", padx=5)
+
+            def toggle(uid=c.user_id):
+                countsCtl.toggleShortlist(uid, self.user.user_id)
+                # redraw the cleaners page so button text refreshes
+                self.displayCleanersPage()
+
+            tk.Button(action, text=btn_text,
+                    command=toggle, width=18).pack(side="left", padx=5)
+
+            row += 1
+
+        # back nav
+        tk.Button(self.root, text="Back",
+                command=self.displayHomeOwnerPage).pack(pady=20)
 
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
