@@ -720,6 +720,8 @@ class HomeOwnerPage:
         self.user = user
         self.displayHomeOwnerPage()
         self.analyticsCtl = controller.CleanerAnalyticsController()
+        self.fetchCatController = controller.FetchCategoriesController()
+        self.fetchCleanerByCatController = controller.FetchCleanerByCatController()
 
 
     def displayHomeOwnerPage(self):
@@ -731,12 +733,55 @@ class HomeOwnerPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
+        Button(self.root, text="View Categories Available",
+            command=self.displayCategoriesPage).pack(pady=5)
+
+        # Add Admin features here
         Button(self.root, text="View Cleaners Available",
             command=self.displayCleanersPage).pack(pady=5)
 
 
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+
+    def displayCategoriesPage(self):
+    # Clear the frame (assumes you have a main_frame or similar container)
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        #Fetch all categories
+        categories = self.fetchCatController.fetchCategories()
+
+        # Title
+        tk.Label(self.root, text="Select a Category", font=("Arial", 16)).pack(pady=10)
+
+        # Display each category as a button
+        for category in categories:
+            tk.Button(
+                self.root,
+                text=category.cat_sv_name,
+                command=lambda c=category.catsv_id: self.displayCleanersByCategory(c)  # or self.displayServicesPage(c.catsv_id)
+            ).pack(pady=5)
+
+
+    def displayCleanersByCategory(self, category_id):
+    # Clear the current view
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Fetch cleaners for this category
+        cleaners = self.fetchCleanerByCatController.fetchCleanerByCat(category_id)
+
+        # Title
+        tk.Label(self.root, text="Cleaners for this category", font=("Arial", 14)).pack(pady=10)
+
+        if not cleaners:
+            tk.Label(self.root, text="No cleaners found for this category.").pack()
+        else:
+            for cleaner in cleaners:
+                tk.Label(self.root, text=f"{cleaner.name} - {cleaner.email}").pack(pady=2)
+
 
     def displayCleanersPage(self):
         # wipe current widgets

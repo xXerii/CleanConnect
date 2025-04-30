@@ -322,6 +322,24 @@ class CategoryService:
         rows = cursor.fetchall()
         cursor.close()
         return [CategoryService(*row) for row in rows]
+    
+    def fetchCleanersByCategory(self, category_id):
+        cursor = db.cursor()
+
+        query = """
+            SELECT u.name, u.email
+            FROM useraccounts u
+            JOIN cleaner_service cs ON u.user_id = cs.cleaner_id
+            JOIN categories_services cat ON cs.service_id = cat.catsv_id
+            WHERE cat.parentCat_id = %s AND u.role_id = %s
+        """
+        cleaner_role_id = 2  # replace with actual role_id value for cleaners
+        cursor.execute(query, (category_id, cleaner_role_id))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        return [UserAccount(name=row[0], email=row[1]) for row in rows] 
+
 
         
 class CleanerAnalytics:
