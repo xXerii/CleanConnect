@@ -598,11 +598,14 @@ class CleanerPage:
         Label(self.root, text=f"Cleaner Dashboard", font=("Arial", 24)).pack(pady=30)
         Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+        # live metrics
+        counts = controller.CleanerAnalyticsController().getCounts(self.user.user_id)
+        tk.Label(self.root, text=f"Profile views: {counts['views']}").pack()
+        tk.Label(self.root, text=f"Times shortlisted: {counts['shortlists']}").pack(pady=(0,10))
 
-        # Add Admin features here
+        
         Button(self.root, text="View Services", command=self.displayMyServicesPage).pack(pady=5)
         Button(self.root, text="Add Services", command=self.openCreateServiceForm).pack(pady=5)
-        Button(self.root, text="View Interest Metrics", command=dummy).pack(pady=5)
         Button(self.root, text="View Job History", command=self.viewJobHistory).pack(pady=5)
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
     
@@ -778,7 +781,7 @@ class CleanerPage:
         self.categoryCombobox['values'] = [cat.cat_sv_name for cat in categories]
         self.categoryCombobox.bind("<<ComboboxSelected>>", self.onCategorySelected)
 
-        # Service selection (Dropdown) - initially empty
+        # Service selection (Dropdown
         self.serviceCombobox = ttk.Combobox(self.root, state="readonly")
         self.serviceCombobox.pack(pady=5)
 
@@ -794,6 +797,8 @@ class CleanerPage:
 
         # Submit button
         tk.Button(self.root, text="Add Service", command=self.addService).pack(pady=20)
+
+        tk.Button(self.root, text="Back", command=self.displayCleanerPage).pack(pady=20)
 
     def getCategoryIdByName(self, categoryName):
         # Return category ID based on category name
@@ -1026,6 +1031,8 @@ class HomeOwnerPage:
         self.root = root
         self.user = user
         self.displayHomeOwnerPage()
+        self.analyticsCtl = controller.CleanerAnalyticsController()
+
 
     def displayHomeOwnerPage(self):
         for widget in self.root.winfo_children():
@@ -1036,9 +1043,74 @@ class HomeOwnerPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Cleaners Available", command=dummy).pack(pady=5)
+        Button(self.root, text="View Cleaners Available",
+            command=self.displayCleanersPage).pack(pady=5)
+
+
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def displayCleanersPage(self):
+        # wipe current widgets
+        for w in self.root.winfo_children():
+            w.destroy()
+
+        tk.Label(self.root,
+                text="Available Cleaners",
+                font=("Arial", 24)).pack(pady=20)
+
+        table = tk.Frame(self.root, bg="#add8e6")
+        table.pack(padx=40, pady=10)
+
+        cleaners = controller.ViewAccountsController().viewAccounts()
+
+        headers = ["Cleaner", "Actions"]
+        for col, h in enumerate(headers):
+            tk.Label(table, text=h, font=("Arial", 12, "bold"),
+                    bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+
+        row = 1
+        for c in cleaners:
+            if c.role_id != 2:   # only cleaners
+                continue
+
+            # name
+            tk.Label(table, text=c.username, bg="#add8e6", width=20)\
+            .grid(row=row, column=0, pady=5)
+
+            # fetch current shortlist status once per cleaner
+            countsCtl = controller.CleanerAnalyticsController()
+            is_shortlisted = countsCtl.model.shortlist_count_for_user(
+                                cleaner_id=c.user_id,
+                                homeowner_id=self.user.user_id)
+
+            btn_text = "Remove from shortlist" if is_shortlisted else "Shortlist"
+
+            # frame to hold the two buttons
+            action = tk.Frame(table, bg="#add8e6")
+            action.grid(row=row, column=1, pady=5)
+
+            def open_profile(uid=c.user_id):
+                countsCtl.logView(uid, self.user.user_id)
+                # in a real app you'd show profile details here
+                messagebox.showinfo("Profile", f"Opened cleaner {uid}'s profile")
+
+            tk.Button(action, text="Open profile",
+                    command=open_profile, width=16).pack(side="left", padx=5)
+
+            def toggle(uid=c.user_id):
+                countsCtl.toggleShortlist(uid, self.user.user_id)
+                # redraw the cleaners page so button text refreshes
+                self.displayCleanersPage()
+
+            tk.Button(action, text=btn_text,
+                    command=toggle, width=18).pack(side="left", padx=5)
+
+            row += 1
+
+        # back nav
+        tk.Button(self.root, text="Back",
+                command=self.displayHomeOwnerPage).pack(pady=20)
 
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
