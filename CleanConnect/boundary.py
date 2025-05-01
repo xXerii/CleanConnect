@@ -1033,22 +1033,193 @@ class HomeOwnerPage:
         self.displayHomeOwnerPage()
         self.analyticsCtl = controller.CleanerAnalyticsController()
 
-
     def displayHomeOwnerPage(self):
+            for widget in self.root.winfo_children():
+                widget.destroy()
+
+            Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
+            Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+            Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+
+            # Add Admin features here
+            Button(self.root, text="View Cleaners Available",
+                command=self.displayCleanersPage).pack(pady=5)
+            # Add Admin features here
+            Button(self.root, text="View Services Available",
+                command=self.displayAvailableService).pack(pady=5)
+
+            Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def displayAvailableService(self):
+        # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
-        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
-        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+        # Set default background color
+        self.root.configure(bg="#f0f2f5")  # Light background
 
-        # Add Admin features here
-        Button(self.root, text="View Cleaners Available",
-            command=self.displayCleanersPage).pack(pady=5)
+        # Header
+        tk.Label(self.root, text="Available Services", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
 
+        # Filter Frame
+        filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
+        filter_frame.pack(pady=10)
 
+        # Category Filter Dropdown
+        tk.Label(filter_frame, text="Search by Category:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        self.category_filter_var = tk.StringVar(value="All")
+        category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
+        category_filter_dropdown['values'] = [
+                    "All",
+                    "Sofa Cleaning",
+                    "Mattress Cleaning",
+                    "Aircon Servicing",
+                    "Deep Cleaning",
+                    "Steam Cleaning",
+                    "Extraction",
+                    "Leather Cleaning",
+                    "Kitchen Deep Clean",
+                    "Bathroom Scrub Down",
+                    "Bedroom Deep Clean",
+                    "UV-C Cleaning"
+                ]
+        category_filter_dropdown.grid(row=0, column=1, padx=5)
 
-        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+        # Apply Filter Button
+        tk.Button(filter_frame, text="Search", command=self.applySearchByCategory, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=2, padx=10)
+
+        # Table Frame (for displaying services)
+        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # White table background
+        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        # Fetch and display all available services initially
+        self.displayServices()
+
+        # Back to Dashboard Button
+        tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+
+    def applySearchByCategory(self):
+        # Get selected category from dropdown
+        selected_category = self.category_filter_var.get()
+
+        # Fetch services based on selected category
+        if selected_category != "All":
+            # Apply filter for specific category
+            search_service_controller = controller.SearchAllAvailableServicesByCategoryController()
+            filtered_services = search_service_controller.fetchSearchServiceCategoryResult(selected_category)
+        else:
+            # No filter, get all services
+            search_service_controller = controller.FetchAllAvailableServicesController()
+            filtered_services = search_service_controller.fetchAllAvailableService()
+
+        # Display the fetched services
+        self.displayServices(filtered_services)
+
+    def displayServices(self, services=None):
+        if services is None:
+            # If no filtered services, fetch all services
+            service_controller = controller.FetchAllAvailableServicesController()
+            services = service_controller.fetchAllAvailableService()
+
+        # Clear existing table widgets
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+        # Table Headers
+        headers = ["Cleaner ID", "Category", "Service Name", "Price", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(self.table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+
+        # Table Rows
+        row = 1
+        for service in services:
+            # Cleaner ID
+            tk.Label(self.table_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
+
+            # Category
+            tk.Label(self.table_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
+
+            # Service Name
+            tk.Label(self.table_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
+
+            # Price
+            tk.Label(self.table_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, pady=5)
+
+            # Actions (Hire and View Profile buttons)
+            action = tk.Frame(self.table_frame, bg="#add8e6")
+            action.grid(row=row, column=4, pady=5)
+
+    
+            tk.Button(action, text="Shortlist", command=self.hire_cleaner, width=12).pack(side="left", padx=5)
+            tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
+
+            row += 1
+    
+    def hire_cleaner(self):
+        messagebox.showinfo("Shortlist", f"You shortlisted cleaner!")
+  
+    def displayCleanerProfilePage(self, cleaner_id):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Set background color
+        self.root.configure(bg="#f0f2f5")
+
+        # Fetch cleaner profile info
+        cleaner_controller = controller.FetchCleanerProfileController()
+        cleaner_services = cleaner_controller.fetchCleanerProfileResult(cleaner_id)
+
+        if not cleaner_services:
+            tk.Label(self.root, text="Cleaner not found.", font=("Arial", 16), bg="#f0f2f5", fg="red").pack(pady=20)
+            return
+
+        # Extract cleaner basic info from the first service entry
+        first_entry = cleaner_services[0]
+        cleaner_name = first_entry[1]  # cleaner_name
+        cleaner_email = first_entry[2]  # cleaner_email
+
+        # Header Section: Cleaner Info
+        profile_frame = tk.Frame(self.root, bg="#ffffff", bd=2, relief="solid")
+        profile_frame.pack(padx=40, pady=20, fill="x")
+
+        tk.Label(profile_frame, text=f"Cleaner Name: {cleaner_name}", font=("Arial", 16), bg="#ffffff", anchor="w").pack(pady=5, padx=10, fill="x")
+        tk.Label(profile_frame, text=f"Cleaner Email: {cleaner_email}", font=("Arial", 16), bg="#ffffff", anchor="w").pack(pady=5, padx=10, fill="x")
+
+        # Table Section: Services
+        table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")
+        table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        table_frame.grid_rowconfigure(0, weight=0)
+        table_frame.grid_columnconfigure(0, weight=1, uniform="group1")
+        table_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+        table_frame.grid_columnconfigure(2, weight=2, uniform="group1")
+        table_frame.grid_columnconfigure(3, weight=1, uniform="group1")
+
+        # Table Headers
+        headers = ["Category", "Service Name", "Description", "Price"]
+        for col, header in enumerate(headers):
+            tk.Label(table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20,
+                    anchor="center").grid(row=0, column=col, pady=5, sticky="nsew")
+
+        # Table Rows
+        for row, service in enumerate(cleaner_services, start=1):
+            category_name = service[4]
+            service_name = service[6]
+            description = service[8]
+            price = service[7]
+            bg_color = "#add8e6"  # Keep background consistent or alternate if needed
+
+            tk.Label(table_frame, text=category_name, bg=bg_color, anchor="nw", justify="left",
+                    wraplength=150).grid(row=row, column=0, sticky="nw", padx=5, pady=3)
+            tk.Label(table_frame, text=service_name, bg=bg_color, anchor="nw", justify="left",
+                    wraplength=150).grid(row=row, column=1, sticky="nw", padx=5, pady=3)
+            tk.Label(table_frame, text=description, bg=bg_color, anchor="nw", justify="left",
+                    wraplength=300).grid(row=row, column=2, sticky="nw", padx=5, pady=3)
+            tk.Label(table_frame, text=f"${price}", bg=bg_color, anchor="nw", justify="left").grid(row=row, column=3, sticky="nw", padx=5, pady=3)
+
+        # Back Button
+        tk.Button(self.root, text="Back", command=self.displayAvailableService, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
 
     def displayCleanersPage(self):
         # wipe current widgets
