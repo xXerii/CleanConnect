@@ -199,7 +199,7 @@ class CleanerService:
 
         return result
 
-    def searchServiceByCategory(self, search_query):
+    def searchAllServices(self, search_query):
         cursor = db.cursor()
         query = """
         SELECT 
@@ -218,9 +218,9 @@ class CleanerService:
         INNER JOIN 
             categories_services cat ON cs.category_id = cat.catsv_id
         WHERE 
-            cat.`cat/sv_name` LIKE %s 
+            cat.`cat/sv_name` LIKE %s OR sv.`cat/sv_name` LIKE %s  -- Search both category and service names
         """
-        cursor.execute(query, (f"%{search_query}%",)) 
+        cursor.execute(query, (f"%{search_query}%", f"%{search_query}%")) 
         rows = cursor.fetchall()
         cursor.close()
 
@@ -239,6 +239,49 @@ class CleanerService:
             service_list.append(service_obj)
 
         return service_list
+    
+    def searchShortlistedServicesByCategory(self, user_id, search_query):
+        cursor = db.cursor()
+        query = """
+        SELECT 
+            sl.cleaner_id,
+            sl.homeowner_id,
+            sl.category_id,
+            sl.service_id,
+            cs.price,
+            sv.`cat/sv_name` AS service_name,
+            cat.`cat/sv_name` AS category_name
+        FROM 
+            shortlist sl
+        JOIN 
+            categories_services sv ON sl.service_id = sv.catsv_id
+        JOIN 
+            categories_services cat ON sl.category_id = cat.catsv_id
+        JOIN 
+            cleaner_service cs ON sl.service_id = cs.service_id
+        WHERE 
+            sl.homeowner_id = %s AND (sv.`cat/sv_name` LIKE %s OR cat.`cat/sv_name` LIKE %s)
+        """
+        cursor.execute(query, (user_id, f"%{search_query}%", f"%{search_query}%")) 
+        rows = cursor.fetchall()
+        print(rows)
+        cursor.close()
+
+        service_list = []
+        for row in rows:
+            service_obj = CleanerService(
+                clean_svc_id=row[0],
+                cleaner_id=row[1],
+                category_id=row[2],
+                service_id=row[3],
+                price=row[4],
+                service_name=row[5],
+                category_name=row[6]
+            )
+            service_list.append(service_obj)
+
+        return service_list
+
 
     def getAllAvailableService(self):
         cursor = db.cursor()
@@ -416,6 +459,38 @@ class CleanerService:
             })
 
         return job_history
+    
+    def getShortlistedServices(self, homeowner_id):
+        cursor = db.cursor()
+        cursor.execute("""
+                SELECT 
+                    cs.cleaner_id,  -- Cleaner ID
+                    cat.catsv_id AS category_id,  -- Category ID
+                    cs.service_id,  -- Service ID
+                    s.`cat/sv_name` AS service_name,  -- Service Name
+                    cat.`cat/sv_name` AS category_name,  -- Category Name
+                    cs.price  -- Price
+                FROM shortlist sl
+                JOIN cleaner_service cs ON sl.service_id = cs.service_id AND sl.cleaner_id = cs.cleaner_id
+                JOIN categories_services s ON cs.service_id = s.catsv_id  -- Service Name
+                JOIN categories_services cat ON s.parentCat_id = cat.catsv_id  -- Category Name
+                WHERE sl.homeowner_id = %s;
+            """, (homeowner_id,))
+    
+        results = []
+        for row in cursor.fetchall():
+            obj = CleanerService(
+                cleaner_id=row[0],
+                category_id=row[1],
+                service_id=row[2],
+                service_name=row[3],
+                category_name=row[4],
+                price=row[5]
+            )
+            results.append(obj)
+    
+        cursor.close()
+        return results
 
 
 class CategoryService:

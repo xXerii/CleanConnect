@@ -96,13 +96,21 @@ class FetchAllAvailableServicesController:
         # Fetch all services available
         return self.cleanerService.getAllAvailableService()
 
-class SearchAllAvailableServicesByCategoryController:
+class SearchAllAvailableServicesController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
     
-    def fetchSearchServiceCategoryResult(self, search_query):
+    def fetchSearchAllServiceResult(self, search_query):
         # Fetch services based on selected category
-        return self.cleanerService.searchServiceByCategory(search_query)
+        return self.cleanerService.searchAllServices(search_query)
+    
+class SearchShortlistedServicesController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def fetchShortlistedServiceCategoryResult(self, user_id, search_query):
+        # Call the model method to get the shortlisted services by category
+        return self.cleanerService.searchShortlistedServicesByCategory(user_id, search_query)
 
 class FetchCleanerProfileController:
     def __init__(self):
@@ -125,6 +133,13 @@ class FetchCleanerByCatController:
 
     def fetchCleanerByCat(self,category_id):
         return self.categoryService.fetchCleanersByCategory(category_id)
+
+class FetchShortlistedServicesController:
+    def __init__(self):
+        self.model = entity.CleanerService()
+
+    def fetchShortlistedServices(self, homeowner_id):
+        return self.model.getShortlistedServices(homeowner_id)
 
 class UpdateServiceController:
     def __init__(self):

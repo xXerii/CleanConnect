@@ -1042,15 +1042,15 @@ class HomeOwnerPage:
             Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
             # Add Admin features here
-            Button(self.root, text="View Cleaners Available",
-                command=self.displayCleanersPage).pack(pady=5)
+            Button(self.root, text="View Shortlist",
+                command=self.displayShortlistPage).pack(pady=5)
             # Add Admin features here
             Button(self.root, text="View Services Available",
-                command=self.displayAvailableService).pack(pady=5)
+                command=self.displayAvailableServicePage).pack(pady=5)
 
             Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
-    def displayAvailableService(self):
+    def displayAvailableServicePage(self):
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -1093,7 +1093,7 @@ class HomeOwnerPage:
         self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
         # Fetch and display all available services initially
-        self.displayServices()
+        self.displayAllServices()
 
         # Back to Dashboard Button
         tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
@@ -1105,17 +1105,17 @@ class HomeOwnerPage:
         # Fetch services based on selected category
         if selected_category != "All":
             # Apply filter for specific category
-            search_service_controller = controller.SearchAllAvailableServicesByCategoryController()
-            filtered_services = search_service_controller.fetchSearchServiceCategoryResult(selected_category)
+            search_service_controller = controller.SearchAllAvailableServicesController()
+            filtered_services = search_service_controller.fetchSearchAllServiceResult(selected_category)
         else:
             # No filter, get all services
             search_service_controller = controller.FetchAllAvailableServicesController()
             filtered_services = search_service_controller.fetchAllAvailableService()
 
         # Display the fetched services
-        self.displayServices(filtered_services)
+        self.displayAllServices(filtered_services)
 
-    def displayServices(self, services=None):
+    def displayAllServices(self, services=None):
         if services is None:
             # If no filtered services, fetch all services
             service_controller = controller.FetchAllAvailableServicesController()
@@ -1161,7 +1161,7 @@ class HomeOwnerPage:
         added = countsCtl.shortlist(cleaner_id, self.user.user_id,category_id, service_id)
     
         if added:
-            messagebox.showinfo("Shortlist", "Cleaner has been shortlisted!")
+            messagebox.showinfo("Shortlist", "Ser has been shortlisted!")
         else:
             messagebox.showinfo("Shortlist", "Cleaner is already shortlisted.")
   
@@ -1228,69 +1228,117 @@ class HomeOwnerPage:
             tk.Label(table_frame, text=f"${price}", bg=bg_color, anchor="nw", justify="left").grid(row=row, column=3, sticky="nw", padx=5, pady=3)
 
         # Back Button
-        tk.Button(self.root, text="Back", command=self.displayAvailableService, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+        tk.Button(self.root, text="Back", command=self.displayAvailableServicePage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
 
-    def displayCleanersPage(self):
-        # wipe current widgets
-        for w in self.root.winfo_children():
-            w.destroy()
+    def displayShortlistPage(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        tk.Label(self.root,
-                text="Available Cleaners",
-                font=("Arial", 24)).pack(pady=20)
+        # Set default background color
+        self.root.configure(bg="#f0f2f5")  # Light background
 
-        table = tk.Frame(self.root, bg="#add8e6")
-        table.pack(padx=40, pady=10)
+        # Header
+        tk.Label(self.root, text="Available Services", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
 
-        cleaners = controller.ViewAccountsController().viewAccounts()
+        # Filter Frame
+        filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
+        filter_frame.pack(pady=10)
 
-        headers = ["Cleaner", "Actions"]
-        for col, h in enumerate(headers):
-            tk.Label(table, text=h, font=("Arial", 12, "bold"),
-                    bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+        # Category Filter Dropdown
+        tk.Label(filter_frame, text="Search by Category:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        self.category_filter_var = tk.StringVar(value="All")
+        category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
+        category_filter_dropdown['values'] = [
+                    "All",
+                    "Sofa Cleaning",
+                    "Mattress Cleaning",
+                    "Aircon Servicing",
+                    "Deep Cleaning",
+                    "Steam Cleaning",
+                    "Extraction",
+                    "Leather Cleaning",
+                    "Kitchen Deep Clean",
+                    "Bathroom Scrub Down",
+                    "Bedroom Deep Clean",
+                    "UV-C Cleaning"
+                ]
+        category_filter_dropdown.grid(row=0, column=1, padx=5)
 
+        # Apply Filter Button
+        tk.Button(filter_frame, text="Search", command=self.applySearchShortlistByCategory, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=2, padx=10)
+
+        # Table Frame (for displaying services)
+        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # White table background
+        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        # Fetch and display shortlist
+        self.displayShortlistServices()
+
+        # Back to Dashboard Button
+        tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+
+    def applySearchShortlistByCategory(self):
+    # Get selected category from dropdown
+        selected_category = self.category_filter_var.get()
+
+        # Fetch shortlisted services based on selected category
+        if selected_category != "All":
+            # Apply filter for specific category for shortlisted services
+            search_service_controller = controller.SearchShortlistedServicesController()
+            filtered_services = search_service_controller.fetchShortlistedServiceCategoryResult(self.user.user_id, selected_category)
+            print(f"[DEBUG] Filtered services for '{selected_category}':", filtered_services)
+        else:
+            # No filter, get all shortlisted services
+            search_service_controller = controller.FetchShortlistedServicesController()
+            filtered_services = search_service_controller.fetchShortlistedServices(self.user.user_id)
+
+        # Display the fetched shortlisted services
+        self.displayShortlistServices(filtered_services)
+
+    def displayShortlistServices(self, services=None):
+        if services is None:
+            # If no filtered services, fetch all services
+            shortlistController = controller.FetchShortlistedServicesController()
+            shortlistedServices = shortlistController.fetchShortlistedServices(self.user.user_id)
+        else:
+            shortlistedServices = services
+
+        # Clear existing table widgets
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+        # Table Headers
+        headers = ["Cleaner ID", "Category", "Service Name", "Price", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(self.table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+
+        # Table Rows
         row = 1
-        for c in cleaners:
-            if c.role_id != 2:   # only cleaners
-                continue
+        for service in shortlistedServices:
+            # Cleaner ID
+            tk.Label(self.table_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
 
-            # name
-            tk.Label(table, text=c.username, bg="#add8e6", width=20)\
-            .grid(row=row, column=0, pady=5)
+            # Category
+            tk.Label(self.table_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
 
-            # fetch current shortlist status once per cleaner
-            countsCtl = controller.CleanerAnalyticsController()
-            is_shortlisted = countsCtl.model.shortlist_count_for_user(
-                                cleaner_id=c.user_id,
-                                homeowner_id=self.user.user_id)
+            # Service Name
+            tk.Label(self.table_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
 
-            btn_text = "Remove from shortlist" if is_shortlisted else "Shortlist"
+            # Price
+            tk.Label(self.table_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, pady=5)
 
-            # frame to hold the two buttons
-            action = tk.Frame(table, bg="#add8e6")
-            action.grid(row=row, column=1, pady=5)
+            # Actions (Hire and View Profile buttons)
+            action = tk.Frame(self.table_frame, bg="#add8e6")
+            action.grid(row=row, column=4, pady=5)
 
-            def open_profile(uid=c.user_id):
-                countsCtl.logView(uid, self.user.user_id)
-                # in a real app you'd show profile details here
-                messagebox.showinfo("Profile", f"Opened cleaner {uid}'s profile")
-
-            tk.Button(action, text="Open profile",
-                    command=open_profile, width=16).pack(side="left", padx=5)
-
-            def toggle(uid=c.user_id):
-                countsCtl.toggleShortlist(uid, self.user.user_id)
-                # redraw the cleaners page so button text refreshes
-                self.displayCleanersPage()
-
-            tk.Button(action, text=btn_text,
-                    command=toggle, width=18).pack(side="left", padx=5)
+    
+            tk.Button(action, text="Shortlist",command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
+                self.shortlistCleaner(cid, cat, sid), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
 
             row += 1
-
-        # back nav
-        tk.Button(self.root, text="Back",
-                command=self.displayHomeOwnerPage).pack(pady=20)
+        
 
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
