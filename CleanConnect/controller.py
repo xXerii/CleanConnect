@@ -87,7 +87,30 @@ class FetchServicesByCategoryController:
 
     def fetchServicesByCategory(self, parentCat_id):
         return self.categoryService.getServicesByCategory(parentCat_id)
+
+class FetchAllAvailableServicesController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
     
+    def fetchAllAvailableService(self):
+        # Fetch all services available
+        return self.cleanerService.getAllAvailableService()
+
+class SearchAllAvailableServicesByCategoryController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+    
+    def fetchSearchServiceCategoryResult(self, search_query):
+        # Fetch services based on selected category
+        return self.cleanerService.searchServiceByCategory(search_query)
+
+class FetchCleanerProfileController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+    
+    def fetchCleanerProfileResult(self,cleaner_id):
+        return self.cleanerService.getCleanerProfile(cleaner_id)
+
 class FetchCleanerAllServicesController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()

@@ -135,7 +135,7 @@ class UserProfile:
             profile_list.append(profile)
 
         return profile_list
-    
+        
     def searchProfiles(self, search_query):
         cursor = db.cursor()
         query = "SELECT * FROM userprofile WHERE role LIKE %s" 
@@ -166,6 +166,121 @@ class CleanerService:
         self.description = description
         self.service_name = service_name
         self.category_name = category_name
+    
+    def getCleanerProfile(self, cleaner_id):
+        cursor = db.cursor()
+        query = """ 
+        SELECT 
+            ua.user_id AS cleaner_id,
+            ua.name AS cleaner_name,
+            ua.email AS cleaner_email,
+            cs.category_id,
+            cat1.`cat/sv_name` AS category_name,
+            cs.service_id,
+            cat2.`cat/sv_name` AS service_name,
+            cs.price,
+            cs.description
+        FROM 
+            useraccounts ua
+        INNER JOIN 
+            cleaner_service cs ON ua.user_id = cs.cleaner_id
+        LEFT JOIN 
+            categories_services cat1 ON cs.category_id = cat1.catsv_id
+        LEFT JOIN 
+            categories_services cat2 ON cs.service_id = cat2.catsv_id
+        WHERE 
+            ua.user_id = %s
+            AND ua.role_id = 2;
+        """
+
+        cursor.execute(query, (cleaner_id,))
+        result = cursor.fetchall()
+        cursor.close()
+
+        return result
+
+    def searchServiceByCategory(self, search_query):
+        cursor = db.cursor()
+        query = """
+        SELECT 
+            cs.clean_svc_id, 
+            cs.cleaner_id, 
+            cs.category_id, 
+            cs.service_id, 
+            cs.price, 
+            cs.description, 
+            sv.`cat/sv_name` AS service_name, 
+            cat.`cat/sv_name` AS category_name
+        FROM 
+            cleaner_service cs
+        INNER JOIN 
+            categories_services sv ON cs.service_id = sv.catsv_id
+        INNER JOIN 
+            categories_services cat ON cs.category_id = cat.catsv_id
+        WHERE 
+            cat.`cat/sv_name` LIKE %s 
+        """
+        cursor.execute(query, (f"%{search_query}%",)) 
+        rows = cursor.fetchall()
+        cursor.close()
+
+        service_list = []
+        for row in rows:
+            service_obj = CleanerService(
+                clean_svc_id=row[0],
+                cleaner_id=row[1],
+                category_id=row[2],
+                service_id=row[3],
+                price=row[4],
+                description=row[5],
+                service_name=row[6],
+                category_name=row[7]
+            )
+            service_list.append(service_obj)
+
+        return service_list
+
+    def getAllAvailableService(self):
+        cursor = db.cursor()
+        query = """
+        SELECT 
+            cs.clean_svc_id,
+            cs.cleaner_id,
+            cs.category_id,
+            cs.service_id,
+            cs.price,
+            cs.description,
+            sv.`cat/sv_name` AS service_name,
+            cat.`cat/sv_name` AS category_name
+        FROM 
+            cleaner_service cs
+        INNER JOIN 
+            categories_services sv ON cs.service_id = sv.catsv_id
+        INNER JOIN 
+            categories_services cat ON cs.category_id = cat.catsv_id
+        ORDER BY 
+            cat.`cat/sv_name` ASC, sv.`cat/sv_name` ASC;
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cursor.close()
+
+        services = []
+        for row in rows:
+            service_obj = CleanerService(
+                    clean_svc_id=row[0],
+                    cleaner_id=row[1],
+                    category_id=row[2],
+                    service_id=row[3],
+                    price=row[4],
+                    description=row[5],
+                    service_name=row[6],
+                    category_name=row[7]
+            )
+
+            services.append(service_obj)
+
+        return services
         
     def addService(self, cleaner_id, category_id, service_id, price, description):
         print(f"Adding service with cleaner_id={cleaner_id}, category_id={category_id}, service_id={service_id}, price={price}, description={description}")
