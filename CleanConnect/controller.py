@@ -165,8 +165,8 @@ class CleanerAnalyticsController:
     def logView(self, cleaner_id, viewer_id):
         self.model.log_view(cleaner_id, viewer_id)
 
-    def toggleShortlist(self, cleaner_id, homeowner_id):
-        self.model.toggle_shortlist(cleaner_id, homeowner_id)
+    def shortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        self.model.shortlist(cleaner_id, homeowner_id, category_id, service_id)
 
     def getCounts(self, cleaner_id):
         return {

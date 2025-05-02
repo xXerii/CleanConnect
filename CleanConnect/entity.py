@@ -479,20 +479,18 @@ class CleanerAnalytics:
         return cnt
 
     # -------- short-lists ----------
-    def toggle_shortlist(self, cleaner_id, homeowner_id):
+    def shortlist(self, cleaner_id, homeowner_id,category_id, service_id):
         cur = self.conn.cursor()
         cur.execute("""SELECT 1 FROM shortlist
-                       WHERE cleaner_id=%s AND homeowner_id=%s""",
-                    (cleaner_id, homeowner_id))
-        if cur.fetchone():
-            cur.execute("""DELETE FROM shortlist
-                           WHERE cleaner_id=%s AND homeowner_id=%s""",
-                        (cleaner_id, homeowner_id))
-        else:
-            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id)
-                           VALUES (%s,%s)""",
-                        (cleaner_id, homeowner_id))
+                       WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
+                    (cleaner_id, homeowner_id, category_id, service_id))
+        already_shortlisted = cur.fetchone() is not None
+        if not cur.fetchone():
+            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
+                       VALUES (%s, %s, %s, %s)""",
+                        (cleaner_id, homeowner_id, category_id, service_id))
         self.conn.commit();  cur.close()
+        return not already_shortlisted
 
     def shortlist_count(self, cleaner_id):
         cur = self.conn.cursor()
