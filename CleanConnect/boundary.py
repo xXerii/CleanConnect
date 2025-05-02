@@ -1066,7 +1066,7 @@ class HomeOwnerPage:
         filter_frame.pack(pady=10)
 
         # Category Filter Dropdown
-        tk.Label(filter_frame, text="Search by Category:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        tk.Label(filter_frame, text="Search by Category or Services", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
         self.category_filter_var = tk.StringVar(value="All")
         category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
         category_filter_dropdown['values'] = [
@@ -1246,7 +1246,7 @@ class HomeOwnerPage:
         filter_frame.pack(pady=10)
 
         # Category Filter Dropdown
-        tk.Label(filter_frame, text="Search by Category:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        tk.Label(filter_frame, text="Search by Category or Services:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
         self.category_filter_var = tk.StringVar(value="All")
         category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
         category_filter_dropdown['values'] = [
