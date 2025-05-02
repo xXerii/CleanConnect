@@ -1150,15 +1150,18 @@ class HomeOwnerPage:
             action.grid(row=row, column=4, pady=5)
 
     
-            tk.Button(action, text="Shortlist", command=self.hire_cleaner, width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Shortlist", command=self.shorlistCleaner, width=12).pack(side="left", padx=5)
             tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
 
             row += 1
     
-    def hire_cleaner(self):
+    def shorlistCleaner(self):
         messagebox.showinfo("Shortlist", f"You shortlisted cleaner!")
   
-    def displayCleanerProfilePage(self, cleaner_id):
+    def displayCleanerProfilePage(self,cleaner_id):
+        
+        countsCtl = controller.CleanerAnalyticsController()
+        countsCtl.logView(cleaner_id, self.user.user_id)
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
