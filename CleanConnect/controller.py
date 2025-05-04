@@ -188,3 +188,10 @@ class CleanerAnalyticsController:
             "views":      self.model.view_count(cleaner_id),
             "shortlists": self.model.shortlist_count(cleaner_id),
         }
+
+class RemoveShortlistController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerAnalytics()
+
+    def removeShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        return self.cleanerService.removeShortlist(cleaner_id, homeowner_id, category_id, service_id)

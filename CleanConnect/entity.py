@@ -245,7 +245,6 @@ class CleanerService:
         query = """
         SELECT 
             sl.cleaner_id,
-            sl.homeowner_id,
             sl.category_id,
             sl.service_id,
             cs.price,
@@ -270,13 +269,12 @@ class CleanerService:
         service_list = []
         for row in rows:
             service_obj = CleanerService(
-                clean_svc_id=row[0],
-                cleaner_id=row[1],
-                category_id=row[2],
-                service_id=row[3],
-                price=row[4],
-                service_name=row[5],
-                category_name=row[6]
+                cleaner_id=row[0],
+                category_id=row[1],
+                service_id=row[2],
+                price=row[3],
+                service_name=row[4],
+                category_name=row[5]
             )
             service_list.append(service_obj)
 
@@ -566,6 +564,24 @@ class CleanerAnalytics:
                         (cleaner_id, homeowner_id, category_id, service_id))
         self.conn.commit();  cur.close()
         return not already_shortlisted
+    
+    def removeShortlist(self, cleaner_id, homeowner_id,category_id, service_id):
+        cursor = db.cursor()
+        try:
+            query = """
+                DELETE FROM shortlist 
+                WHERE cleaner_id = %s AND homeowner_id = %s 
+                AND category_id = %s AND service_id = %s
+            """
+            cursor.execute(query, (cleaner_id, homeowner_id, category_id, service_id))
+            db.commit()
+            print("Shortlist entry removed successfully.")
+        except Exception as e:
+            db.rollback()
+            print("Failed to remove shortlist entry:", e)
+        finally:
+            cursor.close()
+
 
     def shortlist_count(self, cleaner_id):
         cur = self.conn.cursor()
