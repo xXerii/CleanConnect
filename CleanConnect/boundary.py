@@ -1159,9 +1159,10 @@ class HomeOwnerPage:
     def shortlistService(self, cleaner_id, category_id, service_id):
         countsCtl = controller.CleanerAnalyticsController()
         added = countsCtl.shortlist(cleaner_id, self.user.user_id,category_id, service_id)
+        print(f"Shortlist result from shortlist() method: {added}")  # Debugging output
     
         if added:
-            messagebox.showinfo("Shortlist", "Ser has been shortlisted!")
+            messagebox.showinfo("Shortlist", "Cleaner has been shortlisted!")
         else:
             messagebox.showinfo("Shortlist", "Cleaner is already shortlisted.")
 

@@ -181,7 +181,7 @@ class CleanerAnalyticsController:
         self.model.log_view(cleaner_id, viewer_id)
 
     def shortlist(self, cleaner_id, homeowner_id, category_id, service_id):
-        self.model.shortlist(cleaner_id, homeowner_id, category_id, service_id)
+        return self.model.shortlist(cleaner_id, homeowner_id, category_id, service_id)
 
     def getCounts(self, cleaner_id):
         return {

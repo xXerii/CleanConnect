@@ -552,17 +552,29 @@ class CleanerAnalytics:
         return cnt
 
     # -------- short-lists ----------
-    def shortlist(self, cleaner_id, homeowner_id,category_id, service_id):
+    def shortlist(self, cleaner_id, homeowner_id, category_id, service_id):
         cur = self.conn.cursor()
+
+        # Check if the cleaner is already shortlisted
         cur.execute("""SELECT 1 FROM shortlist
-                       WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
-                    (cleaner_id, homeowner_id, category_id, service_id))
-        already_shortlisted = cur.fetchone() is not None
-        if not cur.fetchone():
+                   WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
+                (cleaner_id, homeowner_id, category_id, service_id))
+    
+        result = cur.fetchone()
+        print(f"Shortlist check result for cleaner_id {cleaner_id}: {result}")  # Debugging output
+    
+        already_shortlisted = result is not None
+        print(f"Cleaner {cleaner_id} already shortlisted: {already_shortlisted}")  # Debugging output
+    
+        if not already_shortlisted:
+        # Insert the cleaner into the shortlist if not already shortlisted
             cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
                        VALUES (%s, %s, %s, %s)""",
-                        (cleaner_id, homeowner_id, category_id, service_id))
-        self.conn.commit();  cur.close()
+                    (cleaner_id, homeowner_id, category_id, service_id))
+            self.conn.commit()
+            print("Record inserted!")  # Debug line
+    
+        cur.close()
         return not already_shortlisted
     
     def removeShortlist(self, cleaner_id, homeowner_id,category_id, service_id):
