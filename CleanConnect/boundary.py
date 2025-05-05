@@ -1374,10 +1374,75 @@ class PlatformMngrPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Cleaning Categories", command=dummy).pack(pady=5)
+        Button(self.root, text="View Cleaning Categories", command=self.viewCategoriesPage).pack(pady=5)
         Button(self.root, text="Generate Reports etc", command=dummy).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+
+    def viewCategoriesPage(self):
+        # Clear the current page
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.viewCategories = controller.FetchCategoriesController()
+
+        # Create a search bar above the table
+        self.search_var = StringVar()  # StringVar to hold the search query
+        search_bar = Entry(self.root, textvariable=self.search_var, font=("Arial", 14), width=30)
+        search_bar.pack(pady=20)
+        
+        Label(self.root, text="Cleaning Categories", font=("Arial", 20)).pack(pady=20)
+
+        # Frame to hold the table
+        table_frame = Frame(self.root)
+        table_frame.pack()
+
+        # Table headers
+        Label(table_frame, text="ID", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=10).grid(row=0, column=0)
+        Label(table_frame, text="Category Name", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=30).grid(row=0, column=1)
+        Label(table_frame, text="Description", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=30).grid(row=0, column=2)
+        Label(table_frame, text="Actions", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=40).grid(row=0, column=3)
+
+        # Fetch categories from controller
+        categories = self.viewCategories.fetchCategories()
+
+        if not categories:
+            Label(table_frame, text="No categories found.", font=("Arial", 10)).grid(row=1, column=0, columnspan=3, pady=10)
+        else:
+            self.display_categories(table_frame, categories)  # Display categories in the table
+
+        Button(self.root, text="Back", command=self.PlatformMngrPage).pack(pady=20)
+
+    def search_categories(self, event=None):
+        search_query = self.search_var.get().lower()  # Get the search query in lowercase
+        categories = self.viewCategories.fetchCategories()  # Fetch all categories
+
+        filtered_categories = [category for category in categories if search_query in category.cat_sv_name.lower()]
+        self.display_categories(self.root.winfo_children()[0], filtered_categories)  # Update table with filtered categories
+
+    def display_categories(self, table_frame, categories):
+        # Clear existing data rows (leave headers in row 0)
+        for widget in table_frame.winfo_children():
+            info = widget.grid_info()
+            if info and int(info.get("row", 0)) > 0:
+                widget.destroy()
+
+        # Populate the table with category data
+        for i, category in enumerate(categories, start=1):
+            Label(table_frame, text=category.catsv_id, borderwidth=1, relief="solid", width=10).grid(row=i, column=0)
+            Label(table_frame, text=category.cat_sv_name, borderwidth=1, relief="solid", anchor="w", width=30).grid(row=i, column=1)
+            Label(table_frame, text=category.cat_desc, borderwidth=1, relief="solid", anchor="w", width=50).grid(row=i, column=2)
+
+            action_frame = Frame(table_frame)
+            action_frame.grid(row=i, column=3)
+
+            Button(action_frame, text="View Services", command=lambda c=category: self.dummy_action("View", c)).pack(side=LEFT, padx=2)
+            Button(action_frame, text="Update",        command=lambda c=category: self.dummy_action("Update", c)).pack(side=LEFT, padx=2)
+            Button(action_frame, text="Delete",        command=lambda c=category: self.dummy_action("Delete", c)).pack(side=LEFT, padx=2)
+
+
+    def dummy_action(self, action, category):
+        messagebox.showinfo(f"{action} Clicked", f"{action} for '{category.cat_sv_name}' (ID {category.catsv_id}) coming soon.")    
 
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")

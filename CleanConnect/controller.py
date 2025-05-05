@@ -66,7 +66,6 @@ class UpdateProfileController:
     def updateProfile(self,role_id, new_role):
         return self.userProfile.updateProfile(role_id, new_role)
     
-    
 class AddServiceController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()

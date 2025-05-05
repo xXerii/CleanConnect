@@ -492,14 +492,16 @@ class CleanerService:
 
 
 class CategoryService:
-    def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None):
+    def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None, cat_desc=None):
         self.catsv_id = catsv_id
         self.cat_sv_name = cat_sv_name
         self.parentCat_id = parentCat_id
+        self.cat_desc = cat_desc
+
 
     def getAllCategories(self):
         cursor = db.cursor()
-        cursor.execute("SELECT catsv_id, `cat/sv_name`, parentCat_id FROM categories_services WHERE parentCat_id IS NULL")
+        cursor.execute("SELECT catsv_id, `cat/sv_name`, parentCat_id, cat_desc FROM categories_services WHERE parentCat_id IS NULL")
         rows = cursor.fetchall()
         cursor.close()
         return [CategoryService(*row) for row in rows]
