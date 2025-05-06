@@ -391,25 +391,28 @@ class CleanerService:
         cursor = db.cursor()
         query = """
             SELECT 
-            jh.cleaner_id, jh.booked_by, c.`cat/sv_name` AS service_provided, jh.total_charged,
+            jh.cleaner_id, 
+            ua.name AS booked_by,         -- Get the name from useraccounts
+            c.`cat/sv_name` AS service_provided, 
+            jh.total_charged,
             jh.booked_at
             FROM job_history jh
             JOIN categories_services c 
             ON jh.service_id = c.catsv_id
+            JOIN clean_connect.useraccounts ua
+            ON jh.booked_by = ua.user_id  -- Join on user_id
             WHERE jh.cleaner_id = %s
-            ORDER BY 
-            STR_TO_DATE(jh.booked_at, '%d/%m/%y') ASC
+            ORDER BY STR_TO_DATE(jh.booked_at, '%d/%m/%y') ASC
         """
         cursor.execute(query, (cleaner_id,))
         result = cursor.fetchall()
         cursor.close()
 
-        # Convert tuples to dictionaries
         job_history = []
         for row in result:
             job_history.append({
                 "cleaner_id": row[0],
-                "booked_by": row[1],
+                "booked_by": row[1],  # This will now be the user's name
                 "service_provided": row[2],
                 "total_charged": row[3],
                 "booked_at": row[4]
@@ -492,8 +495,48 @@ class CleanerAnalytics:
         cur.close()
         return bool(exists)
 
+class BookedServices:
+    def __init__(self):
+        self.db = db  # Assuming `db` is your database connection object
 
+    def getBookedServices(self, user_id):
+        """
+        Fetch booked services for a specific user from the booked_services table.
+        """
+        cursor = self.db.cursor()
+        query = """
+            SELECT 
+                bs.cleaner_id,
+                bs.cleaner_name,
+                bs.category_id,
+                cs.`cat/sv_name` AS service_name,
+                bs.total_charged,
+                bs.booked_at
+            FROM 
+                booked_services bs
+            JOIN 
+                categories_services cs ON bs.catsv_id = cs.catsv_id
+            WHERE 
+                bs.user_id = %s
+            ORDER BY 
+                bs.booked_at DESC
+        """
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchall()
+        cursor.close()
 
+        # Format the result into a list of dictionaries
+        booked_services = []
+        for row in result:
+            booked_services.append({
+                "cleaner_id": row[0],
+                "cleaner_name": row[1],
+                "category_id": row[2],
+                "service_name": row[3],  # Fetch service name instead of service_id
+                "total_charged": row[4],
+                "booked_at": row[5]
+            })
 
+        return booked_services
 
 # RANDOM STUFF FOR CI TESTING PLEASE IGNORE

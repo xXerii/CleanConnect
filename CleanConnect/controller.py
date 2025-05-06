@@ -166,3 +166,13 @@ class CleanerAnalyticsController:
             "views":      self.model.view_count(cleaner_id),
             "shortlists": self.model.shortlist_count(cleaner_id),
         }
+
+class BookedServicesController:
+    def __init__(self):
+        self.bookedServices = entity.BookedServices()
+
+    def fetchBookedServices(self, user_id):
+        """
+        Fetch booked services for a specific user.
+        """
+        return self.bookedServices.getBookedServices(user_id)
