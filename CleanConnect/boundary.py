@@ -1427,14 +1427,22 @@ class PlatformMngrPage:
 
         Label(self.root, text="Cleaning Categories", font=("Arial", 20)).pack(pady=20)
 
-        # Create a search bar above the table
-        self.search_var = StringVar()  # StringVar to hold the search query
-        search_bar = Entry(self.root, textvariable=self.search_var, font=("Arial", 14), width=30)
-        search_bar.pack(pady=20)
+        # Create a frame to hold search bar and button
+        search_frame = tk.Frame(self.root, bg="#f0f2f5")
+        search_frame.pack(pady=20)
 
-        # Create a search button below or beside the search bar
-        search_button = Button(self.root, text="Search", command=self.search_categories, font=("Arial", 12))
-        search_button.pack(pady=5)
+        # Create a search bar inside the frame
+        self.search_var = StringVar()  # StringVar to hold the search query
+        search_bar = Entry(search_frame, textvariable=self.search_var, font=("Arial", 14), width=30)
+        search_bar.pack(side="left", padx=5)
+
+        # Create a search button to the right of the search bar
+        search_button = Button(search_frame, text="Search", command=self.search_categories, font=("Arial", 12))
+        search_button.pack(side="left", padx=5)
+
+        # Add Category button (new button to add category)
+        add_category_button = Button(self.root, text="Add Category", command=dummy, font=("Arial", 12))
+        add_category_button.pack(pady=10)
 
         # Store table_frame in the object for reference
          # Table Frame (for displaying categories)

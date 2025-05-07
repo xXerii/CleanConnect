@@ -578,7 +578,12 @@ class CategoryService:
         rows = cursor.fetchall()
         cursor.close()
 
-        return [UserAccount(name=row[0], email=row[1]) for row in rows] 
+        return [UserAccount(name=row[0], email=row[1]) for row in rows]
+
+    def addCategory(self,category_id):
+        cursor = db.cursor()
+
+        
 
 
         
