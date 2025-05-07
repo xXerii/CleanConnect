@@ -489,6 +489,56 @@ class CleanerService:
     
         cursor.close()
         return results
+    
+     # -------- short-lists ----------
+    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        cur = db.cursor()
+
+        # Check if the cleaner is already shortlisted
+        cur.execute("""SELECT 1 FROM shortlist
+                   WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
+                (cleaner_id, homeowner_id, category_id, service_id))
+    
+        result = cur.fetchone()
+        print(f"Shortlist check result for cleaner_id {cleaner_id}: {result}")  # Debugging output
+    
+        already_shortlisted = result is not None
+        print(f"Cleaner {cleaner_id} already shortlisted: {already_shortlisted}")  # Debugging output
+    
+        if not already_shortlisted:
+        # Insert the cleaner into the shortlist if not already shortlisted
+            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
+                       VALUES (%s, %s, %s, %s)""",
+                    (cleaner_id, homeowner_id, category_id, service_id))
+            db.commit()
+            print("Record inserted!")  # Debug line
+    
+        cur.close()
+        return not already_shortlisted # Basically returns True if cleaner is added into the shortlist
+    
+    def removeShortlist(self, cleaner_id, homeowner_id,category_id, service_id):
+        cursor = db.cursor()
+        try:
+            query = """
+                DELETE FROM shortlist 
+                WHERE cleaner_id = %s AND homeowner_id = %s 
+                AND category_id = %s AND service_id = %s
+            """
+            cursor.execute(query, (cleaner_id, homeowner_id, category_id, service_id))
+            db.commit()
+
+            if cursor.rowcount > 0:
+                print("Shortlist entry removed successfully.")
+                return True  # Successfully removed
+            else:
+                print("No matching shortlist entry found.")
+                return False  # No matching entry to remove
+            
+        except Exception as e:
+            db.rollback()
+            print("Failed to remove shortlist entry:", e)
+        finally:
+            cursor.close()
 
 
 class CategoryService:
@@ -552,50 +602,6 @@ class CleanerAnalytics:
                     (cleaner_id,))
         cnt = cur.fetchone()[0];  cur.close()
         return cnt
-
-    # -------- short-lists ----------
-    def shortlist(self, cleaner_id, homeowner_id, category_id, service_id):
-        cur = self.conn.cursor()
-
-        # Check if the cleaner is already shortlisted
-        cur.execute("""SELECT 1 FROM shortlist
-                   WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
-                (cleaner_id, homeowner_id, category_id, service_id))
-    
-        result = cur.fetchone()
-        print(f"Shortlist check result for cleaner_id {cleaner_id}: {result}")  # Debugging output
-    
-        already_shortlisted = result is not None
-        print(f"Cleaner {cleaner_id} already shortlisted: {already_shortlisted}")  # Debugging output
-    
-        if not already_shortlisted:
-        # Insert the cleaner into the shortlist if not already shortlisted
-            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
-                       VALUES (%s, %s, %s, %s)""",
-                    (cleaner_id, homeowner_id, category_id, service_id))
-            self.conn.commit()
-            print("Record inserted!")  # Debug line
-    
-        cur.close()
-        return not already_shortlisted
-    
-    def removeShortlist(self, cleaner_id, homeowner_id,category_id, service_id):
-        cursor = db.cursor()
-        try:
-            query = """
-                DELETE FROM shortlist 
-                WHERE cleaner_id = %s AND homeowner_id = %s 
-                AND category_id = %s AND service_id = %s
-            """
-            cursor.execute(query, (cleaner_id, homeowner_id, category_id, service_id))
-            db.commit()
-            print("Shortlist entry removed successfully.")
-        except Exception as e:
-            db.rollback()
-            print("Failed to remove shortlist entry:", e)
-        finally:
-            cursor.close()
-
 
     def shortlist_count(self, cleaner_id):
         cur = self.conn.cursor()

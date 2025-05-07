@@ -1109,8 +1109,8 @@ class HomeOwnerPage:
             filtered_services = search_service_controller.searchAllServices(selected_category)
         else:
             # No filter, get all services
-            search_service_controller = controller.FetchAllAvailableServicesController()
-            filtered_services = search_service_controller.fetchAllAvailableService()
+            search_service_controller = controller.ViewAllAvailableServicesController()
+            filtered_services = search_service_controller.getAllAvailableService()
 
         # Display the fetched services
         self.displayAllServices(filtered_services)
@@ -1118,8 +1118,8 @@ class HomeOwnerPage:
     def displayAllServices(self, services=None):
         if services is None:
             # If no filtered services, fetch all services
-            service_controller = controller.FetchAllAvailableServicesController()
-            services = service_controller.fetchAllAvailableService()
+            service_controller = controller.ViewAllAvailableServicesController()
+            services = service_controller.getAllAvailableService()
 
         # Clear existing table widgets
         for widget in self.table_frame.winfo_children():
@@ -1157,8 +1157,8 @@ class HomeOwnerPage:
             row += 1
     
     def shortlistService(self, cleaner_id, category_id, service_id):
-        countsCtl = controller.CleanerAnalyticsController()
-        added = countsCtl.shortlist(cleaner_id, self.user.user_id,category_id, service_id)
+        shortListController = controller.AddShortlistController()
+        added = shortListController.addShortlist(cleaner_id, self.user.user_id,category_id, service_id)
         print(f"Shortlist result from shortlist() method: {added}")  # Debugging output
     
         if added:
@@ -1172,6 +1172,12 @@ class HomeOwnerPage:
 
         if removed:
             messagebox.showinfo("Shortlist", "Shortlist removed!")
+            self.displayShortlistPage()
+            
+        else:
+            messagebox.showwarning("Shortlist", "No matching shortlist entry found or failed to remove!")
+
+        
   
     def displayCleanerProfilePage(self,cleaner_id):
         countsCtl = controller.CleanerAnalyticsController()
@@ -1298,8 +1304,8 @@ class HomeOwnerPage:
             print(f"[DEBUG] Filtered services for '{selected_category}':", filtered_services)
         else:
             # No filter, get all shortlisted services
-            search_service_controller = controller.FetchShortlistedServicesController()
-            filtered_services = search_service_controller.fetchShortlistedServices(self.user.user_id)
+            search_service_controller = controller.ViewShortlistedServicesController()
+            filtered_services = search_service_controller.getShortlistedServices(self.user.user_id)
 
         # Display the fetched shortlisted services
         self.displayShortlistServices(filtered_services)
@@ -1307,8 +1313,8 @@ class HomeOwnerPage:
     def displayShortlistServices(self, services=None):
         if services is None:
             # If no filtered services, fetch all services
-            shortlistController = controller.FetchShortlistedServicesController()
-            shortlistedServices = shortlistController.fetchShortlistedServices(self.user.user_id)
+            shortlistController = controller.ViewShortlistedServicesController()
+            shortlistedServices = shortlistController.getShortlistedServices(self.user.user_id)
         else:
             shortlistedServices = services
 

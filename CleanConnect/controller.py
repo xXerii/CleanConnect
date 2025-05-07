@@ -87,11 +87,11 @@ class FetchServicesByCategoryController:
     def fetchServicesByCategory(self, parentCat_id):
         return self.categoryService.getServicesByCategory(parentCat_id)
 
-class FetchAllAvailableServicesController:
+class ViewAllAvailableServicesController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
     
-    def fetchAllAvailableService(self):
+    def getAllAvailableService(self):
         # Fetch all services available
         return self.cleanerService.getAllAvailableService()
 
@@ -133,11 +133,11 @@ class FetchCleanerByCatController:
     def fetchCleanerByCat(self,category_id):
         return self.categoryService.fetchCleanersByCategory(category_id)
 
-class FetchShortlistedServicesController:
+class ViewShortlistedServicesController:
     def __init__(self):
         self.model = entity.CleanerService()
 
-    def fetchShortlistedServices(self, homeowner_id):
+    def getShortlistedServices(self, homeowner_id):
         return self.model.getShortlistedServices(homeowner_id)
 
 class UpdateServiceController:
@@ -179,18 +179,22 @@ class CleanerAnalyticsController:
     def logView(self, cleaner_id, viewer_id):
         self.model.log_view(cleaner_id, viewer_id)
 
-    def shortlist(self, cleaner_id, homeowner_id, category_id, service_id):
-        return self.model.shortlist(cleaner_id, homeowner_id, category_id, service_id)
-
     def getCounts(self, cleaner_id):
         return {
             "views":      self.model.view_count(cleaner_id),
             "shortlists": self.model.shortlist_count(cleaner_id),
         }
 
+class AddShortlistController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        return self.cleanerService.addShortlist(cleaner_id, homeowner_id, category_id, service_id)    
+
 class RemoveShortlistController:
     def __init__(self):
-        self.cleanerService = entity.CleanerAnalytics()
+        self.cleanerService = entity.CleanerService()
 
     def removeShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
         return self.cleanerService.removeShortlist(cleaner_id, homeowner_id, category_id, service_id)
