@@ -915,9 +915,6 @@ class CleanerPage:
         except Exception as e:
             messagebox.showerror("Exception", f"An error occurred: {e}")
 
-
-
-    
     def viewJobHistory(self):
         # Create a controller instance to fetch job history
         self.jobHistoryController = controller.JobHistoryController()
@@ -1125,29 +1122,46 @@ class HomeOwnerPage:
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
+         # Create canvas and scrollbar inside the table_frame
+        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame inside canvas for the scrollable content
+        scrollable_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Scroll region update
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        scrollable_frame.bind("<Configure>", on_frame_configure)
+
         # Table Headers
         headers = ["Cleaner ID", "Category", "Service Name", "Price", "Actions"]
         for col, header in enumerate(headers):
-            tk.Label(self.table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+            tk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
 
         # Table Rows
-        row = 1
-        for service in services:
+        for row, service in enumerate(services, start=1):
             # Cleaner ID
-            tk.Label(self.table_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
+            tk.Label(scrollable_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, sticky="nsew", pady=5)
 
             # Category
-            tk.Label(self.table_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
+            tk.Label(scrollable_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, sticky="nsew", pady=5)
 
             # Service Name
-            tk.Label(self.table_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
+            tk.Label(scrollable_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, sticky="nsew", pady=5)
 
             # Price
-            tk.Label(self.table_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, pady=5)
+            tk.Label(scrollable_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, sticky="nsew", pady=5)
 
             # Actions (Hire and View Profile buttons)
-            action = tk.Frame(self.table_frame, bg="#add8e6")
-            action.grid(row=row, column=4, pady=5)
+            action = tk.Frame(scrollable_frame, bg="#add8e6")
+            action.grid(row=row, column=4, sticky="nsew", padx=10, pady=5)
 
     
             tk.Button(action, text="Shortlist",command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
@@ -1173,7 +1187,7 @@ class HomeOwnerPage:
         if removed:
             messagebox.showinfo("Shortlist", "Shortlist removed!")
             self.displayShortlistPage()
-            
+
         else:
             messagebox.showwarning("Shortlist", "No matching shortlist entry found or failed to remove!")
 
@@ -1253,7 +1267,7 @@ class HomeOwnerPage:
         self.root.configure(bg="#f0f2f5")  # Light background
 
         # Header
-        tk.Label(self.root, text="Available Services", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
+        tk.Label(self.root, text="Shortlist", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
 
         # Filter Frame
         filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
@@ -1282,8 +1296,9 @@ class HomeOwnerPage:
         # Apply Filter Button
         tk.Button(filter_frame, text="Search", command=self.applySearchShortlistByCategory, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=2, padx=10)
 
-        # Table Frame (for displaying services)
-        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # White table background
+        # Store table_frame in the object for reference
+         # Table Frame (for displaying categories)
+        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Table background
         self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
         # Fetch and display shortlist
@@ -1312,46 +1327,61 @@ class HomeOwnerPage:
 
     def displayShortlistServices(self, services=None):
         if services is None:
-            # If no filtered services, fetch all services
+          # If no filtered services, fetch all services
             shortlistController = controller.ViewShortlistedServicesController()
             shortlistedServices = shortlistController.getShortlistedServices(self.user.user_id)
         else:
             shortlistedServices = services
 
-        # Clear existing table widgets
+        # Clear existing widgets inside table_frame only (this will reset the table each time it's updated)
         for widget in self.table_frame.winfo_children():
             widget.destroy()
+
+        # Create canvas and scrollbar inside the table_frame
+        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame inside canvas for the scrollable content
+        scrollable_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Scroll region update
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        scrollable_frame.bind("<Configure>", on_frame_configure)
 
         # Table Headers
         headers = ["Cleaner ID", "Category", "Service Name", "Price", "Actions"]
         for col, header in enumerate(headers):
-            tk.Label(self.table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+            tk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, sticky="nsew", pady=5)
 
         # Table Rows
-        row = 1
-        for service in shortlistedServices:
+        for row, service in enumerate(shortlistedServices, start=1):
             # Cleaner ID
-            tk.Label(self.table_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
+            tk.Label(scrollable_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, sticky="nsew", pady=5)
 
             # Category
-            tk.Label(self.table_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
+            tk.Label(scrollable_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, sticky="nsew", pady=5)
 
             # Service Name
-            tk.Label(self.table_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
+            tk.Label(scrollable_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, sticky="nsew", pady=5)
 
             # Price
-            tk.Label(self.table_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, pady=5)
+            tk.Label(scrollable_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, sticky="nsew", pady=5)
 
-            # Actions (Hire and View Profile buttons)
-            action = tk.Frame(self.table_frame, bg="#add8e6")
-            action.grid(row=row, column=4, pady=5)
+            # Actions (Remove and View Profile buttons)
+            action = tk.Frame(scrollable_frame, bg="#add8e6")
+            action.grid(row=row, column=4, sticky="nsew", padx=10, pady=5)
 
-    
-            tk.Button(action, text="Remove",command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
-                self.removeShortlist(cid, cat, sid), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Remove", command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
+                    self.removeShortlist(cid, cat, sid), width=12).pack(side="left", padx=5)
             tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
 
-            row += 1
         
 
     def dummy(self):
@@ -1386,69 +1416,108 @@ class PlatformMngrPage:
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
     def viewCategoriesPage(self):
-        # Clear the current page
+    # Clear the current page, but leave the search bar and buttons intact
         for widget in self.root.winfo_children():
             widget.destroy()
 
         self.viewCategories = controller.FetchCategoriesController()
 
+        # Set default background color
+        self.root.configure(bg="#f0f2f5")  # Light background
+
+        Label(self.root, text="Cleaning Categories", font=("Arial", 20)).pack(pady=20)
+
         # Create a search bar above the table
         self.search_var = StringVar()  # StringVar to hold the search query
         search_bar = Entry(self.root, textvariable=self.search_var, font=("Arial", 14), width=30)
         search_bar.pack(pady=20)
-        
-        Label(self.root, text="Cleaning Categories", font=("Arial", 20)).pack(pady=20)
 
-        # Frame to hold the table
-        table_frame = Frame(self.root)
-        table_frame.pack()
+        # Create a search button below or beside the search bar
+        search_button = Button(self.root, text="Search", command=self.search_categories, font=("Arial", 12))
+        search_button.pack(pady=5)
 
-        # Table headers
-        Label(table_frame, text="ID", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=10).grid(row=0, column=0)
-        Label(table_frame, text="Category Name", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=30).grid(row=0, column=1)
-        Label(table_frame, text="Description", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=30).grid(row=0, column=2)
-        Label(table_frame, text="Actions", font=("Arial", 12, "bold"), borderwidth=1, relief="solid", width=40).grid(row=0, column=3)
+        # Store table_frame in the object for reference
+         # Table Frame (for displaying categories)
+        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Table background
+        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
-        # Fetch categories from controller
-        categories = self.viewCategories.fetchCategories()
-
-        if not categories:
-            Label(table_frame, text="No categories found.", font=("Arial", 10)).grid(row=1, column=0, columnspan=3, pady=10)
-        else:
-            self.display_categories(table_frame, categories)  # Display categories in the table
+        self.display_categories()
 
         Button(self.root, text="Back", command=self.PlatformMngrPage).pack(pady=20)
 
-    def search_categories(self, event=None):
+    def search_categories(self):
+        # Get the search query
         search_query = self.search_var.get().lower()  # Get the search query in lowercase
-        categories = self.viewCategories.fetchCategories()  # Fetch all categories
 
-        filtered_categories = [category for category in categories if search_query in category.cat_sv_name.lower()]
-        self.display_categories(self.root.winfo_children()[0], filtered_categories)  # Update table with filtered categories
+        # Fetch all categories
+        categories = self.viewCategories.fetchCategories()
 
-    def display_categories(self, table_frame, categories):
-        # Clear existing data rows (leave headers in row 0)
-        for widget in table_frame.winfo_children():
-            info = widget.grid_info()
-            if info and int(info.get("row", 0)) > 0:
-                widget.destroy()
+        # Apply search filter based on the search query
+        if search_query:
+            # Filter categories based on the search query
+            filtered_categories = [category for category in categories if search_query in category.cat_sv_name.lower()]
+            print(f"[DEBUG] Filtered categories for query '{search_query}':", filtered_categories)
+        else:
+            # No search query, fetch all categories
+            filtered_categories = categories
 
-        # Populate the table with category data
-        for i, category in enumerate(categories, start=1):
-            Label(table_frame, text=category.catsv_id, borderwidth=1, relief="solid", width=10).grid(row=i, column=0)
-            Label(table_frame, text=category.cat_sv_name, borderwidth=1, relief="solid", anchor="w", width=30).grid(row=i, column=1)
-            Label(table_frame, text=category.cat_desc, borderwidth=1, relief="solid", anchor="w", width=50).grid(row=i, column=2)
+        # Display the filtered categories
+        self.display_categories(filtered_categories)
 
-            action_frame = Frame(table_frame)
-            action_frame.grid(row=i, column=3)
+    def display_categories(self, categories=None):
+        if categories is None:
+            categories = self.viewCategories.fetchCategories()
 
-            Button(action_frame, text="View Services", command=lambda c=category: self.dummy_action("View", c)).pack(side=LEFT, padx=2)
-            Button(action_frame, text="Update",        command=lambda c=category: self.dummy_action("Update", c)).pack(side=LEFT, padx=2)
-            Button(action_frame, text="Delete",        command=lambda c=category: self.dummy_action("Delete", c)).pack(side=LEFT, padx=2)
+        # Clear existing widgets in table_frame only
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+        # Create canvas and scrollbar
+        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame inside canvas
+        scrollable_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Scroll region update
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        scrollable_frame.bind("<Configure>", on_frame_configure)
 
 
-    def dummy_action(self, action, category):
-        messagebox.showinfo(f"{action} Clicked", f"{action} for '{category.cat_sv_name}' (ID {category.catsv_id}) coming soon.")    
+        # Table Headers
+        headers = ["Category ID", "Category Name", "Description", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+
+    
+        # Rows
+        for row, category in enumerate(categories, start=1):
+            # Category ID
+            tk.Label(scrollable_frame, text=category.catsv_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
+
+            # Category Name
+            tk.Label(scrollable_frame, text=category.cat_sv_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
+
+            # Category Description
+            tk.Label(scrollable_frame, text=category.cat_desc, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
+
+            # Actions (View, Update, and Delete buttons)
+            action = tk.Frame(scrollable_frame, bg="#add8e6")
+            action.grid(row=row, column=3, pady=5)
+
+            tk.Button(action, text="View Services", command=lambda c=category: self.view_category_services(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Update", command=lambda c=category: self.update_category(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Delete", command=lambda c=category: self.delete_category(c), width=12).pack(side="left", padx=5)
+
+
+
 
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
