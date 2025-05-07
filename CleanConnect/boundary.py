@@ -179,7 +179,7 @@ class AdminPage:
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id), font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
 
                 status = "Suspended" if account.suspended else "Active"
-                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row_count, column=3, sticky="nsew")
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=3, sticky="nsew")
 
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
@@ -497,7 +497,7 @@ class AdminPage:
                 tk.Label(table_frame, text=profile.role, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=1, sticky="nsew")
 
                 status = "Suspended" if profile.suspended else "Active"
-                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row_count, column=2, sticky="nsew")
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
 
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
