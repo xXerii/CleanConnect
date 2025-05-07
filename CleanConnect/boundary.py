@@ -1106,7 +1106,7 @@ class HomeOwnerPage:
         if selected_category != "All":
             # Apply filter for specific category
             search_service_controller = controller.SearchAllAvailableServicesController()
-            filtered_services = search_service_controller.fetchSearchAllServiceResult(selected_category)
+            filtered_services = search_service_controller.searchAllServices(selected_category)
         else:
             # No filter, get all services
             search_service_controller = controller.FetchAllAvailableServicesController()

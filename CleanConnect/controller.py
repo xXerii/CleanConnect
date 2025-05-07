@@ -99,7 +99,7 @@ class SearchAllAvailableServicesController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
     
-    def fetchSearchAllServiceResult(self, search_query):
+    def searchAllServices(self, search_query):
         # Fetch services based on selected category
         return self.cleanerService.searchAllServices(search_query)
     
