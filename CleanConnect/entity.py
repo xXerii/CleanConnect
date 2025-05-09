@@ -634,6 +634,34 @@ class CategoryService:
         # Close the cursor to avoid potential memory leaks
             cursor.close()
         
+    def deleteCategory(self, catsv_id): # ON DELETE CASCADE
+        cursor = db.cursor()
+        try:
+            cursor.execute("DELETE FROM categories_services WHERE catsv_id = %s AND parentCat_id IS NULL", (catsv_id,))
+            db.commit()
+            return True
+        except Exception as e:
+            db.rollback()
+            print(f"Error deleting category: {e}")
+            return False
+        finally:
+            cursor.close()
+
+    def updateCategoryDesc(self, catsv_id, new_desc):
+        cursor = db.cursor()
+        try:
+            cursor.execute(
+                "UPDATE categories_services SET cat_desc = %s WHERE catsv_id = %s",
+                (new_desc, catsv_id)
+            )
+            db.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            db.rollback()
+            print(f"Error updating description: {e}")
+            return False
+        finally:
+            cursor.close()
 
 
 

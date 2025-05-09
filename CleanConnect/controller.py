@@ -212,3 +212,17 @@ class AddPlatformServiceController:
 
     def addService(self, cat_sv_name, parentCat_id):
         return self.categoryService.addNewService(cat_sv_name, parentCat_id)
+
+class DeleteCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def deleteCategory(self, catsv_id):
+        return self.categoryService.deleteCategory(catsv_id)
+
+class UpdateCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def updateCategoryDesc(self, catsv_id, new_desc):
+        return self.categoryService.updateCategoryDesc(catsv_id, new_desc)

@@ -1524,8 +1524,8 @@ class PlatformMngrPage:
             action.grid(row=row, column=3, pady=5)
 
             tk.Button(action, text="View Services", command=lambda c=category: self.view_category_services(c), width=12).pack(side="left", padx=5)
-            tk.Button(action, text="Update", command=lambda c=category: self.update_category(c), width=12).pack(side="left", padx=5)
-            tk.Button(action, text="Delete", command=lambda c=category: self.delete_category(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Update", command=lambda c=category: self.openUpdateCategoryForm(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Delete", command=lambda c=category: self.deleteCategory(c), width=12).pack(side="left", padx=5)
 
     
     def openAddCategoryForm(self):
@@ -1600,15 +1600,15 @@ class PlatformMngrPage:
         add_service_button = tk.Button(self.root, text="Add Service", font=("Arial", 12), command=self.addNewService)
         add_service_button.pack(pady=20)
 
-    def addNewService(self):
-        cat_sv_name = self.servNameEntry.get()  # Get the service name
+    def addNewService(self): # OUT OF SCOPE
+        cat_sv_name = self.servNameEntry.get()  
         selected_category_name  = self.category_combobox.get()
-        print("Selected:", selected_category_name) # Get the selected category ID
+        print("Selected:", selected_category_name) 
 
         for cat in self.categories:
             print("Comparing to:", cat.cat_sv_name)
             if cat.cat_sv_name.strip() == selected_category_name.strip():
-                parent_id = cat.catsv_id
+                parentCat_id = cat.catsv_id
                 break
 
         # Call the controller's add function
@@ -1632,6 +1632,56 @@ class PlatformMngrPage:
             print("Service successfully added!")
         else:
             print("Failed to add service.")
+        
+    def deleteCategory(self, category):
+        self.deleteCat = controller.DeleteCategoryController()
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete category '{category.cat_sv_name}'?")
+        if confirm:
+            success = self.deleteCat.deleteCategory(category.catsv_id)
+            if success:
+                messagebox.showinfo("Success", f"Category '{category.cat_sv_name}' has been deleted.")
+                self.display_categories()  # Refresh the table
+            else:
+                messagebox.showerror("Error", "Failed to delete the category.")
+
+    def openUpdateCategoryForm(self, category):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Display form title
+        tk.Label(self.root, text="Update Category Description", font=("Arial", 18)).pack(pady=20)
+
+        # Category Description
+        tk.Label(self.root, text="Category Description:", font=("Arial", 12)).pack(pady=10)
+        self.descEntry = tk.Entry(self.root, width=30)
+        desc_text = str(category.cat_desc) if category.cat_desc is not None else ""
+        self.descEntry.insert(tk.END, desc_text)  # Set default value
+        self.descEntry.pack(pady=10)
+
+        # Update Button
+        updateCategoryButton = tk.Button(
+            self.root,
+            text="Update Category",
+            font=("Arial", 12),
+            command=lambda c=category: self.updateCategory(c)
+        )
+        updateCategoryButton.pack(pady=20)
+
+    def updateCategory(self, category):
+        self.updateCatDesc = controller.UpdateCategoryController()
+        newCatDesc = self.descEntry.get()
+
+        # Update the category
+        success = self.updateCatDesc.updateCategoryDesc(category.catsv_id,newCatDesc)
+        if success:
+            messagebox.showinfo(
+                "Success",
+                f"Category '{category.cat_sv_name}' has been updated."
+            )
+            self.viewCategoriesPage()  # Refresh the table
+        else:
+            messagebox.showerror("Error", "Failed to update the category.")
+      
 
 
     def dummy(self):
