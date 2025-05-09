@@ -198,3 +198,17 @@ class RemoveShortlistController:
 
     def removeShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
         return self.cleanerService.removeShortlist(cleaner_id, homeowner_id, category_id, service_id)
+    
+class AddCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def addCategory(self, cat_sv_name, cat_desc):
+        return self.categoryService.addCategory(cat_sv_name, cat_desc)
+
+class AddPlatformServiceController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def addService(self, cat_sv_name, parentCat_id):
+        return self.categoryService.addNewService(cat_sv_name, parentCat_id)

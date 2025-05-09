@@ -580,8 +580,62 @@ class CategoryService:
 
         return [UserAccount(name=row[0], email=row[1]) for row in rows]
 
-    def addCategory(self,category_id):
+    def addCategory(self, cat_sv_name, cat_desc):
         cursor = db.cursor()
+        try:
+            query = """
+           INSERT INTO categories_services (`cat/sv_name`, parentCat_id, cat_desc)
+            VALUES (%s, NULL, %s) 
+            """
+            cursor.execute(query, (cat_sv_name, cat_desc))
+            db.commit()
+            return True
+    
+        except Exception as e:
+            db.rollback()
+            print("Error adding category:", e)
+            return False
+        
+    def addNewService(self, cat_sv_name, parentCat_id):
+        cursor = db.cursor()
+        try:
+        # First, check if the parent category exists
+            cursor.execute("SELECT catsv_id FROM categories_services WHERE catsv_id = %s", (parentCat_id,))
+            result = cursor.fetchone()
+
+            # If the parent category does not exist, create a new one
+            if result is None:
+                print(f"Parent category with ID {parentCat_id} does not exist. Creating a new category...")
+                cursor.execute("""
+                INSERT INTO categories_services (`cat/sv_name`, parentCat_id)
+                VALUES (%s, %s)
+            """, (f"New Category {parentCat_id}", None))  # Insert a new parent category
+                db.commit()
+                parentCat_id = cursor.lastrowid  # Get the ID of the newly created category
+                print(f"New parent category created with ID {parentCat_id}")
+
+            query = """
+            INSERT INTO categories_services (`cat/sv_name`, parentCat_id)
+            VALUES (%s, %s)
+            """
+            cursor.execute(query, (cat_sv_name, parentCat_id))
+            db.commit()
+            return True
+        
+        except Exception as e:
+            # Rollback in case of any error
+            db.rollback()
+
+            # Optionally log the error or print it
+            print(f"Error adding new service: {e}")
+            return False
+
+        finally:
+        # Close the cursor to avoid potential memory leaks
+            cursor.close()
+        
+
+
 
         
 

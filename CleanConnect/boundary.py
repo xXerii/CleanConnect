@@ -1441,8 +1441,11 @@ class PlatformMngrPage:
         search_button.pack(side="left", padx=5)
 
         # Add Category button (new button to add category)
-        add_category_button = Button(self.root, text="Add Category", command=dummy, font=("Arial", 12))
+        add_category_button = Button(self.root, text="Add Category", command=lambda: self.openAddCategoryForm(), font=("Arial", 12))
         add_category_button.pack(pady=10)
+
+        addServiceButton = Button(self.root, text="Add Service", command=lambda: self.openAddServiceForm(), font=("Arial", 12))
+        addServiceButton.pack(pady=10)
 
         # Store table_frame in the object for reference
          # Table Frame (for displaying categories)
@@ -1524,7 +1527,111 @@ class PlatformMngrPage:
             tk.Button(action, text="Update", command=lambda c=category: self.update_category(c), width=12).pack(side="left", padx=5)
             tk.Button(action, text="Delete", command=lambda c=category: self.delete_category(c), width=12).pack(side="left", padx=5)
 
+    
+    def openAddCategoryForm(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
+        # Display form title
+        tk.Label(self.root, text="Add Category", font=("Arial", 18)).pack(pady=20)
+
+        # Price input
+        tk.Label(self.root, text="Category Name:").pack(pady=5)
+        self.nameEntry = tk.Entry(self.root)
+        self.nameEntry.pack(pady=5)
+
+        # Description input
+        tk.Label(self.root, text="Description:").pack(pady=5)
+        self.descriptionEntry = tk.Entry(self.root)
+        self.descriptionEntry.pack(pady=5)
+
+        # Submit button
+        tk.Button(self.root, text="Add Category", command=self.addCategory).pack(pady=20)
+
+        tk.Button(self.root, text="Back", command=self.viewCategoriesPage).pack(pady=20)
+
+    def addCategory(self):
+        self.addCategoryController = controller.AddCategoryController()
+        catName = self.nameEntry.get().strip()
+        catDesc = self.descriptionEntry.get().strip()
+
+        if not catName:
+            messagebox.showwarning("Input Error", "Category name is required.")
+            return
+
+        success = self.addCategoryController.addCategory(catName, catDesc)
+
+        if success:
+            messagebox.showinfo("Success", f"Category '{catName}' added successfully.")
+            self.viewCategoriesPage()
+        else:
+            messagebox.showerror("Error", "Failed to add category. Check the database or try again.")
+
+    def openAddServiceForm(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Display form title
+        tk.Label(self.root, text="Add Services", font=("Arial", 18)).pack(pady=20)
+
+        # Fetch existing categories
+        fetchController= controller.FetchCategoriesController()
+        self.categories = fetchController.fetchCategories() 
+
+         # Check if categories are found, otherwise show an error message
+        if not self.categories:
+            tk.Label(self.root, text="No categories available. Please add categories first.", font=("Arial", 12), fg="red").pack(pady=10)
+            return  # Exit the function if no categories are found
+
+        # Category dropdown (combobox)
+        category_names = [cat.cat_sv_name for cat in self.categories]  # Assuming the second item in tuple is the category name
+        tk.Label(self.root, text="Select Category:", font=("Arial", 12)).pack(pady=10)
+    
+        # Create a combobox for category selection
+        self.category_combobox = ttk.Combobox(self.root, values=category_names, width=30)
+        self.category_combobox.pack(pady=10)
+
+        # Service Name input
+        tk.Label(self.root, text="Service Name:", font=("Arial", 12)).pack(pady=10)
+        self.servNameEntry = tk.Entry(self.root, width=30)
+        self.servNameEntry.pack(pady=10)
+
+        # Add Service Button
+        add_service_button = tk.Button(self.root, text="Add Service", font=("Arial", 12), command=self.addNewService)
+        add_service_button.pack(pady=20)
+
+    def addNewService(self):
+        cat_sv_name = self.servNameEntry.get()  # Get the service name
+        selected_category_name  = self.category_combobox.get()
+        print("Selected:", selected_category_name) # Get the selected category ID
+
+        for cat in self.categories:
+            print("Comparing to:", cat.cat_sv_name)
+            if cat.cat_sv_name.strip() == selected_category_name.strip():
+                parent_id = cat.catsv_id
+                break
+
+        # Call the controller's add function
+        self.addPlatServiceController = controller.AddPlatformServiceController()
+
+        parentCat_id = None
+        for cat in self.categories:
+            print("Comparing to:", cat.cat_sv_name)
+            if cat.cat_sv_name.strip() == selected_category_name.strip():
+                parentCat_id = cat.catsv_id
+                break
+
+        if parentCat_id is None:
+            print("Error: Selected category not found.")
+        else:
+            cat_sv_name = self.servNameEntry.get()
+            # Now use the correct ID
+            success = self.addPlatServiceController.addService(cat_sv_name, parentCat_id)
+        
+        if success:
+            print("Service successfully added!")
+        else:
+            print("Failed to add service.")
 
 
     def dummy(self):
