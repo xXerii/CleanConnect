@@ -624,8 +624,4 @@ class CleanerAnalytics:
         cur.close()
         return bool(exists)
 
-
-
-
-
-# RANDOM STUFF FOR CI TESTING PLEASE IGNORE
+# THE ONE PIECE IS REAL
