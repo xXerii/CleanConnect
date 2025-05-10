@@ -1088,8 +1088,7 @@ class HomeOwnerPage:
         Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
-        Button(self.root, text="View Cleaners Available", command=self.displayCleanersPage).pack(pady=5)
-        Button(self.root, text="View Services Available", command=self.displayAvailableService).pack(pady=5)
+        Button(self.root, text="View Shortlist", command=self.displayShortlistPage).pack(pady=5)
         Button(self.root, text="View Services Booked", command=self.viewBookedServices).pack(pady=5)
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
