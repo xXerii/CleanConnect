@@ -185,7 +185,7 @@ class UserProfile:
                    SET suspended= %s
                  WHERE role_id = %s
             """
-            cursor.execute(sql1, (not suspended, role_id))
+            cursor.execute(sql1, (suspended, role_id))
 
             # 2) update ALL useraccounts linked to that role_id
             sql2 = """

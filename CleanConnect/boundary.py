@@ -429,7 +429,6 @@ class AdminPage:
 
     def displayProfilesPage(self):
         # Create ViewProfiles controller instance
-        self.controller = controller.ViewProfileController()
         self.searchController = controller.SearchProfilesController()
 
         # Set up the accounts display UI
@@ -463,16 +462,22 @@ class AdminPage:
                 render_table(filtered_profiles)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
-        tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewProfiles())).grid(row=0, column=3, padx=5)
+        tk.Button(search_frame, text="Reset", command=lambda: render_table()).grid(row=0, column=3, padx=5)
 
          # Table Frame
         table_frame = tk.Frame(self.root, bg="#add8e6")
         table_frame.grid(row=2, column=0, columnspan=4, padx=30, pady=10, sticky="nsew")
 
 
-        self.all_profiles = self.controller.viewProfiles()
+        
 
-        def render_table(profiles):
+        def render_table(profiles=None):
+            self.controller = controller.ViewProfileController()
+            self.all_profiles = self.controller.viewProfiles()
+            if profiles is None:
+                profiles = self.controller.viewProfiles()
+            self.all_profiles = profiles
+
             # Clear previous widgets in table frame
             for widget in table_frame.winfo_children():
                 widget.destroy()
@@ -520,7 +525,7 @@ class AdminPage:
             style_btn("Add Profile", self.displayAddProfileForm, "#009688").grid(row=0, column=2, padx=10)
 
 
-        render_table(self.all_profiles)
+        render_table()
 
     def displayAddProfileForm(self):
         self.addProfcontroller = controller.CreateProfileController()
@@ -564,7 +569,7 @@ class AdminPage:
         Pops up a Yes/No dialog to suspend or reactivate,
         then calls the controller and refreshes the table.
         """
-        verb = "reactivate" if activate else "suspend"
+        verb = "suspend" if not profile.suspended else "reactivate"
         msg = f"Are you sure you want to {verb} role #{profile.role_id} ({profile.role})?"
         if not messagebox.askyesno("Please confirm", msg):
             return
