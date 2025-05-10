@@ -156,6 +156,57 @@ class UserProfile:
         db.commit()
         cursor.close()
 
+    def createProfile(self, role):
+        cursor = db.cursor()
+        query = """
+            INSERT INTO userprofile (
+                role
+            ) VALUES (%s)
+        """
+        try:
+            cursor.execute(query, (role))
+            db.commit()
+            print("Profile created successfully")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            db.rollback()
+            return False
+        finally:
+            cursor.close()
+    
+    def setProfileSuspension(self, role_id: int, suspended: bool) -> bool:
+        try:
+            cursor = db.cursor(buffered=True)
+
+            # 1) update profile’s is_suspended = not active
+            sql1 = """
+                UPDATE userprofile
+                   SET suspended= %s
+                 WHERE role_id = %s
+            """
+            cursor.execute(sql1, (not suspended, role_id))
+
+            # 2) update ALL useraccounts linked to that role_id
+            sql2 = """
+                UPDATE useraccounts
+                SET suspended = %s
+                WHERE role_id = %s
+                """
+            cursor.execute(sql2, (suspended, role_id))
+
+            db.commit()
+            return True
+
+        except Exception as e:
+            print("Error toggling profile:", e)
+            db.rollback()
+            return False
+
+        finally:
+            cursor.close()
+        
+
 class CleanerService:
     def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None, service_name=None, category_name=None):
         self.clean_svc_id = clean_svc_id
@@ -662,6 +713,50 @@ class CategoryService:
             return False
         finally:
             cursor.close()
+    
+    def updateCategoryDesc(self, catsv_id, new_desc):
+        cursor = db.cursor()
+        try:
+            cursor.execute(
+                "UPDATE categories_services SET cat_desc = %s WHERE catsv_id = %s",
+                (new_desc, catsv_id)
+            )
+            db.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            db.rollback()
+            print(f"Error updating description: {e}")
+            return False
+        finally:
+            cursor.close()
+    
+    def searchCategories(self, search_query):
+        cursor = db.cursor()
+        sql = """
+            SELECT catsv_id,
+                    `cat/sv_name`,
+                   cat_desc
+              FROM categories_services
+             WHERE `cat/sv_name` LIKE %s
+        """
+        # note the comma: makes it a single‐element tuple
+        cursor.execute(sql, (f"%{search_query}%",))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        category_list = []
+        for row in rows:
+            # adjust the constructor args to match your Category model
+            category_list.append(
+                CategoryService(
+                    catsv_id=row[0],
+                    cat_sv_name=row[1],
+                    cat_desc=row[2]
+                )
+            )
+        return category_list
+
+
 
 
 

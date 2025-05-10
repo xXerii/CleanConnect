@@ -421,10 +421,6 @@ class AdminPage:
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
 
-    def cancelAccUpdate(self):
-        # Simply go back to the accounts page without making any changes
-        self.displayAccountsPage()
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # User Profile functions
     # Opens the Profile page
@@ -507,7 +503,7 @@ class AdminPage:
                 edit_btn.pack(side="left", padx=10)
 
                 suspend_button_text = "Suspend" if not profile.suspended else "Reactivate"
-                suspend_btn = tk.Button(action_frame, text=suspend_button_text,  command=dummy, fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
+                suspend_btn = tk.Button(action_frame, text=suspend_button_text,  command=lambda prof=profile: self.suspendProfile(prof, not prof.suspended), fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
                 suspend_btn.pack(side="left", padx=10)
 
                 row_count += 1  # Increment the row count after each account
@@ -521,12 +517,65 @@ class AdminPage:
             # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
             style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
             style_btn("View Accounts", self.openManageAccounts, "#3f51b5").grid(row=0, column=1, padx=10)
-            style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)
+            style_btn("Add Profile", self.displayAddProfileForm, "#009688").grid(row=0, column=2, padx=10)
 
 
         render_table(self.all_profiles)
 
-        
+    def displayAddProfileForm(self):
+        self.addProfcontroller = controller.CreateProfileController()
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Title for the update page
+        tk.Label(self.root, text="Add Profile", font=("Arial", 24)).pack(pady=20)
+
+        # Fields to update the username, password, and role
+        tk.Label(self.root, text="Role Name:").pack(pady=5)
+        self.roleEntry = tk.Entry(self.root, font=("Arial", 12))
+        self.roleEntry.pack(pady=5)
+
+        # Buttons to submit or cancel the update
+        submit_button = tk.Button(self.root, text="Add",  command=self.addProfile)
+        submit_button.pack(pady=10)
+
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayProfilesPage)
+        cancel_button.pack(pady=10)
+
+    def addProfile(self):
+        # Get the values entered in the fields
+        roleName = self.roleEntry.get()
+
+        # Validate the input
+        if not roleName:
+            messagebox.showerror("Error", "All fields must be filled out")
+            return
+        success = self.addProfcontroller.createProfile((roleName,))
+        if success:
+            messagebox.showinfo("Success", f"Profile with role '{roleName}' added.")
+            self.displayProfilesPage()
+        else:
+            messagebox.showerror("Error", "Failed to add profile. Please try again.")
+    
+    def suspendProfile(self, profile, activate: bool):
+        self.susController = controller.SuspendProfileController()
+        """
+        Pops up a Yes/No dialog to suspend or reactivate,
+        then calls the controller and refreshes the table.
+        """
+        verb = "reactivate" if activate else "suspend"
+        msg = f"Are you sure you want to {verb} role #{profile.role_id} ({profile.role})?"
+        if not messagebox.askyesno("Please confirm", msg):
+            return
+
+        success = self.susController.setProfileSuspension(profile.role_id, activate)
+        if success:
+            messagebox.showinfo("Success", f"Role has been {verb}d.")
+        else:
+            messagebox.showerror("Error", f"Failed to {verb} role.")
+        # Refresh your listing
+        self.displayProfilesPage()
 
 
     def displayProfileUpdateForm(self, profile):
@@ -548,7 +597,7 @@ class AdminPage:
         submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitProfUpdate(profile.role_id))
         submit_button.pack(pady=10)
 
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelProfUpdate)
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayProfilesPage())
         cancel_button.pack(pady=10)
 
     def submitProfUpdate(self, role_id):
@@ -567,10 +616,6 @@ class AdminPage:
             self.displayProfilesPage()  # Refresh the accounts page after successful update
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
-
-    def cancelProfUpdate(self):
-        # Simply go back to the accounts page without making any changes
-        self.displayProfilesPage()
 
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
@@ -1432,12 +1477,12 @@ class PlatformMngrPage:
         search_frame.pack(pady=20)
 
         # Create a search bar inside the frame
-        self.search_var = StringVar()  # StringVar to hold the search query
-        search_bar = Entry(search_frame, textvariable=self.search_var, font=("Arial", 14), width=30)
+        self.searchEntry = StringVar()  # StringVar to hold the search query
+        search_bar = Entry(search_frame, textvariable=self.searchEntry, font=("Arial", 14), width=30)
         search_bar.pack(side="left", padx=5)
 
         # Create a search button to the right of the search bar
-        search_button = Button(search_frame, text="Search", command=self.search_categories, font=("Arial", 12))
+        search_button = Button(search_frame, text="Search", command=self.searchCategories, font=("Arial", 12))
         search_button.pack(side="left", padx=5)
 
         # Add Category button (new button to add category)
@@ -1452,30 +1497,24 @@ class PlatformMngrPage:
         self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Table background
         self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
-        self.display_categories()
+        self.displayCategories()
 
         Button(self.root, text="Back", command=self.PlatformMngrPage).pack(pady=20)
 
-    def search_categories(self):
-        # Get the search query
-        search_query = self.search_var.get().lower()  # Get the search query in lowercase
+    def searchCategories(self):
+        self.searchAllCategories = controller.SearchCategoryController()
 
-        # Fetch all categories
-        categories = self.viewCategories.fetchCategories()
-
-        # Apply search filter based on the search query
+        search_query = self.searchEntry.get().strip()
         if search_query:
-            # Filter categories based on the search query
-            filtered_categories = [category for category in categories if search_query in category.cat_sv_name.lower()]
-            print(f"[DEBUG] Filtered categories for query '{search_query}':", filtered_categories)
+            # call the controller’s method you just wrote
+            categories = self.searchAllCategories.searchCategories(search_query)
         else:
-            # No search query, fetch all categories
-            filtered_categories = categories
+            # if the box is empty, fall back to showing all
+            categories = self.viewCategories.fetchCategories()
+        # refresh the table with whatever list we got back
+        self.displayCategories(categories)
 
-        # Display the filtered categories
-        self.display_categories(filtered_categories)
-
-    def display_categories(self, categories=None):
+    def displayCategories(self, categories=None):
         if categories is None:
             categories = self.viewCategories.fetchCategories()
 
@@ -1523,7 +1562,7 @@ class PlatformMngrPage:
             action = tk.Frame(scrollable_frame, bg="#add8e6")
             action.grid(row=row, column=3, pady=5)
 
-            tk.Button(action, text="View Services", command=lambda c=category: self.view_category_services(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="View Services", command=lambda c=category: dummy(c), width=12).pack(side="left", padx=5)
             tk.Button(action, text="Update", command=lambda c=category: self.openUpdateCategoryForm(c), width=12).pack(side="left", padx=5)
             tk.Button(action, text="Delete", command=lambda c=category: self.deleteCategory(c), width=12).pack(side="left", padx=5)
 
@@ -1640,7 +1679,7 @@ class PlatformMngrPage:
             success = self.deleteCat.deleteCategory(category.catsv_id)
             if success:
                 messagebox.showinfo("Success", f"Category '{category.cat_sv_name}' has been deleted.")
-                self.display_categories()  # Refresh the table
+                self.displayCategories()  # Refresh the table
             else:
                 messagebox.showerror("Error", "Failed to delete the category.")
 

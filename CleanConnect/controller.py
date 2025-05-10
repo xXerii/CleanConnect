@@ -21,7 +21,6 @@ class SearchAccountsController:
     def searchAccounts(self, username):
         return self.userAccount.searchAccounts(username)
     
-    
 class UpdateAccountsController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
@@ -226,3 +225,33 @@ class UpdateCategoryController:
 
     def updateCategoryDesc(self, catsv_id, new_desc):
         return self.categoryService.updateCategoryDesc(catsv_id, new_desc)
+
+class SearchCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def searchCategories(self, search_query):
+        return self.categoryService.searchCategories(search_query)
+    
+# User Admins Controllers'
+class CreateProfileController:
+    def __init__(self):
+        self.userProfile = entity.UserProfile()
+    
+    def createProfile(self, role):
+        # Create a new user account
+        return self.userProfile.createProfile(role)
+
+class SuspendProfileController:
+    def __init__(self):
+        self.userProfile = entity.UserProfile()
+    
+    def setProfileSuspension(self, id: int, suspended: bool):
+        return self.userProfile.setProfileSuspension(id, suspended)
+    
+
+# Cleaners Controllers
+
+# Home owner Controllers
+
+# Platform Manager Controllers
