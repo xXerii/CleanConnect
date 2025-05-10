@@ -43,7 +43,7 @@ class LoginPage:
 
         if not user:
             messagebox.showerror("Login Failed", "Invalid credentials.")
-            return
+            pass  # Placeholder to avoid syntax errors
 
         if user.suspended:
             messagebox.showerror("Account Suspended",
@@ -1081,21 +1081,17 @@ class HomeOwnerPage:
         self.analyticsCtl = controller.CleanerAnalyticsController()
 
     def displayHomeOwnerPage(self):
-            for widget in self.root.winfo_children():
-                widget.destroy()
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-            Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
-            Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
-            Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+        Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
+        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
-            # Add Admin features here
-            Button(self.root, text="View Shortlist",
-                command=self.displayShortlistPage).pack(pady=5)
-            # Add Admin features here
-            Button(self.root, text="View Services Available",
-                command=self.displayAvailableServicePage).pack(pady=5)
-
-            Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+        Button(self.root, text="View Cleaners Available", command=self.displayCleanersPage).pack(pady=5)
+        Button(self.root, text="View Services Available", command=self.displayAvailableService).pack(pady=5)
+        Button(self.root, text="View Services Booked", command=self.viewBookedServices).pack(pady=5)
+        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
     def displayAvailableServicePage(self):
         # Clear existing widgets
@@ -1434,6 +1430,93 @@ class HomeOwnerPage:
 
         
 
+    def viewBookedServices(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Header
+        tk.Label(self.root, text="Booked Services", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
+
+        # Filter Frame
+        filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
+        filter_frame.pack(pady=10)
+
+        # Name Filter
+        tk.Label(filter_frame, text="Search by Name:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        name_filter_var = tk.StringVar()
+        name_filter_entry = tk.Entry(filter_frame, textvariable=name_filter_var, width=20)
+        name_filter_entry.grid(row=0, column=1, padx=5)
+
+        # Month Filter
+        tk.Label(filter_frame, text="Filter by Month:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=2, padx=5)
+        month_filter_var = tk.StringVar(value="All")
+        month_filter_dropdown = ttk.Combobox(filter_frame, textvariable=month_filter_var, state="readonly", width=15)
+        month_filter_dropdown['values'] = ["All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        month_filter_dropdown.grid(row=0, column=3, padx=5)
+
+        # Apply Filter Button
+        def apply_filters():
+            name_filter = name_filter_var.get().strip().lower()
+            selected_month = month_filter_var.get()
+
+            # Fetch booked services from the controller
+            booked_services_controller = controller.BookedServicesController()
+            booked_services = booked_services_controller.fetchBookedServices(self.user.user_id)
+
+            # Filter by name
+            name_filter = name_filter.strip().lower()
+            if name_filter:
+                booked_services = [
+                service for service in booked_services
+                if name_filter in service["service_name"].lower()
+             ]
+
+            # Filter by month
+            if selected_month != "All":
+                month_index = month_filter_dropdown['values'].index(selected_month)  # Get the month index
+                booked_services = [
+                    service for service in booked_services
+                    if service["booked_at"].month == month_index
+                ]
+
+            # Update the table with filtered results
+            render_table(booked_services)
+
+        tk.Button(filter_frame, text="Apply Filters", command=apply_filters, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=4, padx=10)
+
+        # Table Frame
+        table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Light blue table background
+        table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        # Function to render the table
+        def render_table(booked_services):
+            # Clear existing table widgets
+            for widget in table_frame.winfo_children():
+                widget.destroy()
+
+            # Table Headers
+            headers = ["Cleaner ID", "Cleaner Name", "Category ID", "Service Name", "Total Charged", "Booked At"]
+            for col, header in enumerate(headers):
+                tk.Label(table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", fg="black", borderwidth=1, relief="solid").grid(row=0, column=col, sticky="nsew")
+
+            # Table Rows
+            for row_num, service in enumerate(booked_services, start=1):
+                tk.Label(table_frame, text=service["cleaner_id"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=0, sticky="nsew")
+                tk.Label(table_frame, text=service["cleaner_name"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=1, sticky="nsew")
+                tk.Label(table_frame, text=service["category_id"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=2, sticky="nsew")
+                tk.Label(table_frame, text=service["service_name"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=3, sticky="nsew")
+                tk.Label(table_frame, text=f"${service['total_charged']}", font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=4, sticky="nsew")
+                tk.Label(table_frame, text=service["booked_at"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=5, sticky="nsew")
+
+        # Fetch and display all booked services initially
+        booked_services_controller = controller.BookedServicesController()
+        booked_services = booked_services_controller.fetchBookedServices(self.user.user_id)
+        render_table(booked_services)
+
+        # Back to Dashboard Button
+        tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+        
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
 

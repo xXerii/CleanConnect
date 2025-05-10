@@ -255,3 +255,12 @@ class SuspendProfileController:
 # Home owner Controllers
 
 # Platform Manager Controllers
+class BookedServicesController:
+    def __init__(self):
+        self.bookedServices = entity.BookedServices()
+
+    def fetchBookedServices(self, user_id):
+        """
+        Fetch booked services for a specific user.
+        """
+        return self.bookedServices.getBookedServices(user_id)
