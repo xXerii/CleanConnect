@@ -145,6 +145,9 @@ class AdminPage:
             query = self.search_entry.get().strip()
             if query:
                 filtered_accounts = self.searchController.searchAccounts(query)
+                if not filtered_accounts:
+                    messagebox.showerror("No Results", f"No accounts found for '{query}'.")
+            else:
                 render_table(filtered_accounts)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
@@ -161,10 +164,6 @@ class AdminPage:
             # Clear previous widgets in table frame
             for widget in table_frame.winfo_children():
                 widget.destroy()
-
-            # Clear existing button_frame if it exists (to avoid duplicate buttons)
-            if hasattr(self, 'button_frame') and self.button_frame:
-                self.button_frame.destroy()
 
             headers = ["User ID", "Username", "Role","Status", "Actions"]
             header_font = ("Arial", 12, "bold")
@@ -194,18 +193,18 @@ class AdminPage:
 
                 row_count += 1  # Increment the row count after each account
 
-            # Action Buttons
-            self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
-            self.button_frame.grid(row=row_count, column=0, columnspan=5, pady=10)
-                
-            style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
-
-            # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
-            style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
-            style_btn("View Profiles", self.openManageProfiles, "#3f51b5").grid(row=0, column=1, padx=10)
-            style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)
-
         render_table(self.all_accounts)
+
+        # Action Buttons
+        self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.button_frame.grid(row=3, column=0, columnspan=5, pady=10)
+                
+        style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
+
+        # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
+        style_btn("View Profiles", self.openManageProfiles, "#3f51b5").grid(row=0, column=1, padx=10)
+        style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)  
 
     def suspendUserAccount(self, user_id, currently_suspended):
         self.suspendController = controller.SuspendAccountsController()
@@ -224,9 +223,13 @@ class AdminPage:
         inner = tk.Frame(border, bg="#add8e6")
         inner.pack(expand=True, fill="both", padx=20, pady=20)
 
-        # Message
-        tk.Label(inner, text="Are you sure you want to suspend this user?", font=("Arial", 12, "bold"), bg="#add8e6",wraplength=300,justify="center").pack(pady=(5, 20))
+        # Dynamically update the button text based on current suspension status
+        suspend_button_text = "Suspend" if not currently_suspended else "Reactivate"
 
+        # Message
+        tk.Label(inner, text=f"Are you sure you want to {suspend_button_text} this user?", font=("Arial", 12, "bold"), bg="#add8e6",wraplength=300,justify="center").pack(pady=(5, 20))
+
+        
         # Center the window on screen
         popup.update_idletasks()
         width = popup.winfo_width()
@@ -243,8 +246,8 @@ class AdminPage:
         cancel_btn = tk.Button(button_frame, text="Cancel", width=10, command=popup.destroy, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         cancel_btn.pack(side="left", padx=10)
 
-        # Dynamically update the button text based on current suspension status
-        suspend_button_text = "Suspend" if not currently_suspended else "Reactivate"
+       
+
         
         def handle_suspend():
             self.toggleSuspension(user_id, currently_suspended)
@@ -256,12 +259,16 @@ class AdminPage:
 
     def toggleSuspension(self, user_id, currently_suspended):
         # Flip the flag
-        self.suspendController.setAccountSuspension(user_id, not bool(currently_suspended))
-        # Feedback
-        state = "suspended" if not currently_suspended else "reactivated"
-        messagebox.showinfo("Success", f"Account {user_id} {state}.")
-        # Refresh the table so status & button update
-        self.displayAccountsPage()
+        success = self.suspendController.setAccountSuspension(user_id, not bool(currently_suspended))
+
+        if success:
+            # Feedback
+            state = "suspended" if not currently_suspended else "reactivated"
+            messagebox.showinfo("Success", f"Account {user_id} {state}.")
+            # Refresh the table so status & button update
+            self.displayAccountsPage()
+        else:
+            messagebox.showerror("Error", f"Failed to update suspension status for account {user_id}.")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
@@ -312,24 +319,33 @@ class AdminPage:
 
         # Submit button
         def submit():
-            name = name_entry.get()
-            username = username_entry.get()
-            password = password_entry.get()
-            confirm = confirm_password_entry.get()
-            email = email_entry.get()
+            name     = name_entry.get().strip()
+            username = username_entry.get().strip()
+            password = password_entry.get().strip()
+            confirm  = confirm_password_entry.get().strip()
+            email    = email_entry.get().strip()
             selected_role_name = self.selectedRole.get()
-            role_id = self.roleMap[selected_role_name]
+            role_id  = self.roleMap.get(selected_role_name)
 
             if password != confirm:
                 messagebox.showerror("Error", "Passwords do not match.")
+                return 
+
+            success, code = self.createController.createAccount(
+                name, username, password, email, role_id
+            ) 
+
+            if not success:
+                if code == "empty":
+                    messagebox.showerror("Error", "All fields must be filled out")
+                else:
+                    messagebox.showerror(
+                    "Error",
+                    "Failed to create account. Please check the console for details."
+                )
                 return
             
-            try:
-                self.createController.createAccount(name, username, password ,email, role_id)
-                # Controller: Return Data
-                messagebox.showinfo("Success", f"Account for {username} created successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"An error occurred: {e}")
+            messagebox.showinfo("Success", f"Account for {username} created successfully!")
 
         Button(self.root, text="Submit", command=submit).pack(pady=10)
         Button(self.root, text="Back", command=self.displayAccountsPage).pack(pady=5)
@@ -391,7 +407,7 @@ class AdminPage:
         submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitAccUpdate(account.user_id))
         submit_button.pack(pady=10)
 
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelAccUpdate)
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayAccountsPage)
         cancel_button.pack(pady=10)
 
     def submitAccUpdate(self, user_id):
@@ -407,19 +423,18 @@ class AdminPage:
         if new_password != confirmpw:
             messagebox.showerror("Error", "Passwords do not match.")
             return
+        
+        success, code = self.controller.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
 
-        # Validate the input
-        if not new_username or not new_password or not new_role_id:
-            messagebox.showerror("Error", "All fields must be filled out")
+        if not success:
+            if code == "empty":
+                messagebox.showerror("Error", "All fields must be filled out.")
+            else:
+                messagebox.showerror("Error", "Database error")
             return
-
-        try:
-            # Call the controller's update method with the correct parameters
-            self.controller.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
-            messagebox.showinfo("Success", "Account updated successfully!")
-            self.displayAccountsPage()  # Refresh the accounts page after successful update
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {e}")
+     
+        messagebox.showinfo("Success", "Account updated.")
+        return
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # User Profile functions
@@ -459,7 +474,10 @@ class AdminPage:
             query = self.search_entry.get().strip()
             if query:
                 filtered_profiles = self.searchController.searchProfiles(query)
-                render_table(filtered_profiles)
+                if not filtered_profiles:
+                    messagebox.showerror("No Results", f"No profiles found for '{query}'.")
+                else:
+                    render_table(filtered_profiles)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table()).grid(row=0, column=3, padx=5)
@@ -468,8 +486,6 @@ class AdminPage:
         table_frame = tk.Frame(self.root, bg="#add8e6")
         table_frame.grid(row=2, column=0, columnspan=4, padx=30, pady=10, sticky="nsew")
 
-
-        
 
         def render_table(profiles=None):
             self.controller = controller.ViewProfileController()
@@ -481,10 +497,6 @@ class AdminPage:
             # Clear previous widgets in table frame
             for widget in table_frame.winfo_children():
                 widget.destroy()
-
-            # Clear existing button_frame if it exists (to avoid duplicate buttons)
-            if hasattr(self, 'button_frame') and self.button_frame:
-                self.button_frame.destroy()
 
             headers = ["Role ID", "Role Name","Status", "Actions"]
             header_font = ("Arial", 12, "bold")
@@ -513,19 +525,18 @@ class AdminPage:
 
                 row_count += 1  # Increment the row count after each account
 
-            # Action Buttons
-            self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
-            self.button_frame.grid(row=row_count, column=0, columnspan=5, pady=10)
-                
-            style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
-
-            # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
-            style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
-            style_btn("View Accounts", self.openManageAccounts, "#3f51b5").grid(row=0, column=1, padx=10)
-            style_btn("Add Profile", self.displayAddProfileForm, "#009688").grid(row=0, column=2, padx=10)
-
-
         render_table()
+
+        # Action Buttons
+        self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.button_frame.grid(row=3, column=0, columnspan=5, pady=10)
+                
+        style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
+
+        # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
+        style_btn("View Accounts", self.openManageAccounts, "#3f51b5").grid(row=0, column=1, padx=10)
+        style_btn("Add Profile", self.displayAddProfileForm, "#009688").grid(row=0, column=2, padx=10)
 
     def displayAddProfileForm(self):
         self.addProfcontroller = controller.CreateProfileController()
@@ -551,17 +562,16 @@ class AdminPage:
     def addProfile(self):
         # Get the values entered in the fields
         roleName = self.roleEntry.get()
+        success, code = self.addProfcontroller.createProfile(roleName)
 
-        # Validate the input
-        if not roleName:
-            messagebox.showerror("Error", "All fields must be filled out")
+        if not success:
+            if code == "empty":
+                messagebox.showerror("Error", "All fields must be filled out")
+            else:
+                messagebox.showerror("Error", "Failed to add profile. Please try again.")
             return
-        success = self.addProfcontroller.createProfile((roleName,))
-        if success:
-            messagebox.showinfo("Success", f"Profile with role '{roleName}' added.")
-            self.displayProfilesPage()
-        else:
-            messagebox.showerror("Error", "Failed to add profile. Please try again.")
+    
+        messagebox.showinfo("Success", "Profile added")
     
     def suspendProfile(self, profile, activate: bool):
         self.susController = controller.SuspendProfileController()
@@ -602,26 +612,22 @@ class AdminPage:
         submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitProfUpdate(profile.role_id))
         submit_button.pack(pady=10)
 
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayProfilesPage())
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayProfilesPage)
         cancel_button.pack(pady=10)
 
     def submitProfUpdate(self, role_id):
         # Get the values entered in the fields
         new_role = self.new_role_entry.get()
+        success, code = self.controller.updateProfile(role_id, new_role)
 
-        # Validate the input
-        if not new_role:
-            messagebox.showerror("Error", "All fields must be filled out")
+        if not success:
+            if code == "empty":
+                messagebox.showerror("Error", "All fields must be filled out")
+            else:
+                messagebox.showerror("Error", "Failed to update profile. DB Error.")
             return
-
-        try:
-            # Call the controller's update method with the correct parameters
-            self.controller.updateProfile(role_id, new_role)
-            messagebox.showinfo("Success", "Profile updated successfully!")
-            self.displayProfilesPage()  # Refresh the accounts page after successful update
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {e}")
-
+        
+        messagebox.showinfo("Success", "Profile updated")
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
     def logout(self):

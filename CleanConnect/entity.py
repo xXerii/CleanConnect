@@ -40,13 +40,15 @@ class UserAccount:
         account_list = []
         for account in accounts:
             user = UserAccount(account[0], account[1], account[2], account[3], account[4], account[5], account[6])
-            user.role = role_map.get(user.role_id, "Unknown")  # add role_name as extra field
+            user.role = role_map.get(user.role_id, "Unknown")
             account_list.append(user)
 
         return account_list
     
     def updateAccount(self, user_id, new_name, new_username, new_email, new_password, new_role_id):
-        # Perform the database update logic for the provided user ID
+        if not all ([new_name, new_username, new_email, new_password, new_role_id]):
+            print("Error: all fields are required # DEBUG FALSE")
+            return False, "empty"
         cursor = db.cursor()
         query = """
             UPDATE useraccounts
@@ -57,9 +59,20 @@ class UserAccount:
                 role_id = %s
             WHERE user_id = %s
         """
-        cursor.execute(query, (new_name, new_username, new_email, new_password, new_role_id, user_id))
-        db.commit()
-        cursor.close()
+        try:
+            cursor.execute(
+                query,
+                (new_name, new_username, new_email, new_password, new_role_id, user_id)
+            )
+            db.commit()
+            print("Account updated successfully # DEBUG TRUE")
+            return True,""
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False, "dberror"
+        finally:
+            cursor.close()
 
     def searchAccounts(self, search_query):
         cursor = db.cursor()
@@ -74,18 +87,24 @@ class UserAccount:
         return account_list
     
     def createAccount(self, name, username, password, email, role_id):
+        if not all([name, username, password, email, role_id]):
+            print("Error: all fields are required # DEBUG FALSE")
+            return False, "empty"
+
         cursor = db.cursor()
         query = """
             INSERT INTO useraccounts (name, username, password, email, role_id)
             VALUES (%s, %s, %s, %s, %s)
         """
         try:
-            cursor.execute(query, (name, username, password ,email, role_id))
+            cursor.execute(query, (name, username, password, email, role_id))
             db.commit()
-            print("Account created successfully")
+            print("Account created successfully # DEBUG TRUE")
+            return True, ""
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
+            return False, "dberror"
         finally:
             cursor.close()
 
@@ -108,13 +127,20 @@ class UserAccount:
         return UserAccount(uid, name, username, email, pw, role, suspended)
         
     def setSuspended(self, user_id: int, suspended: bool):
-        cursor = db.cursor()
-        cursor.execute(
-            "UPDATE useraccounts SET suspended=%s WHERE user_id=%s",
-            (1 if suspended else 0, user_id)
-        )
-        db.commit()
-        cursor.close()
+        try:
+            cursor = db.cursor()
+            cursor.execute(
+                "UPDATE useraccounts SET suspended=%s WHERE user_id=%s",
+                (1 if suspended else 0, user_id)
+            )
+            db.commit()
+            return True
+        except Exception as e:
+            print(f"Error setting suspension status: {e} # DEBUG FALSE")
+            db.rollback()
+            return False
+        finally:
+            cursor.close()
 
 class UserProfile:
     def __init__(self, role_id=None, role=None, suspended=None):
@@ -149,14 +175,30 @@ class UserProfile:
         return profile_list
     
     def updateProfile(self, role_id, new_role):
+        if not new_role or not new_role.strip():
+            print("Error: role is required # DEBUG FALSE" )
+            return False, "empty"
         # Perform the database update logic for the provided user ID
         cursor = db.cursor()
         query = "UPDATE userprofile SET role =%s WHERE role_id = %s "
-        cursor.execute(query, (new_role, role_id))
-        db.commit()
-        cursor.close()
+        try:
+            cursor.execute(query, (new_role, role_id))
+            db.commit()
+            print("Profile updated successfully # DEBUG TRUE")
+            return True, ""
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False, "dberror" 
+          
+        finally:
+            cursor.close()
 
     def createProfile(self, role):
+        if not role or not role.strip():
+            print("Error: role is required # DEBUG FALSE" )
+            return False, "empty"
+        
         cursor = db.cursor()
         query = """
             INSERT INTO userprofile (
@@ -164,22 +206,23 @@ class UserProfile:
             ) VALUES (%s)
         """
         try:
-            cursor.execute(query, (role))
+            cursor.execute(query, (role,))
             db.commit()
-            print("Profile created successfully")
-            return True
+            print("Profile created successfully # DEBUG TRUE")
+            return True,""
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
-            return False
+            return False, "dberror"
+        
+            
         finally:
             cursor.close()
     
-    def setProfileSuspension(self, role_id: int, suspended: bool) -> bool:
+    def setProfileSuspension(self, role_id: int, suspended: bool):
         try:
             cursor = db.cursor(buffered=True)
 
-            # 1) update profile’s is_suspended = not active
             sql1 = """
                 UPDATE userprofile
                    SET suspended= %s
@@ -187,7 +230,6 @@ class UserProfile:
             """
             cursor.execute(sql1, (suspended, role_id))
 
-            # 2) update ALL useraccounts linked to that role_id
             sql2 = """
                 UPDATE useraccounts
                 SET suspended = %s
