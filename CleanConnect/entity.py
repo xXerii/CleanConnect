@@ -46,9 +46,6 @@ class UserAccount:
         return account_list
     
     def updateAccount(self, user_id, new_name, new_username, new_email, new_password, new_role_id):
-        if not all ([new_name, new_username, new_email, new_password, new_role_id]):
-            print("Error: all fields are required # DEBUG FALSE")
-            return False, "empty"
         cursor = db.cursor()
         query = """
             UPDATE useraccounts
@@ -66,11 +63,11 @@ class UserAccount:
             )
             db.commit()
             print("Account updated successfully # DEBUG TRUE")
-            return True,""
+            return True
         except mysql.connector.Error as err:
             print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
-            return False, "dberror"
+            return False
         finally:
             cursor.close()
 
@@ -96,11 +93,11 @@ class UserAccount:
             cursor.execute(query, (name, username, password, email, role_id))
             db.commit()
             print("Account created successfully # DEBUG TRUE")
-            return True, ""
+            return True
         except mysql.connector.Error as err:
             print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
-            return False, "dberror"
+            return False
         finally:
             cursor.close()
 
@@ -171,9 +168,6 @@ class UserProfile:
         return profile_list
     
     def updateProfile(self, role_id, new_role):
-        if not new_role or not new_role.strip():
-            print("Error: role is required # DEBUG FALSE" )
-            return False, "empty"
         # Perform the database update logic for the provided user ID
         cursor = db.cursor()
         query = "UPDATE userprofile SET role =%s WHERE role_id = %s "
@@ -181,20 +175,16 @@ class UserProfile:
             cursor.execute(query, (new_role, role_id))
             db.commit()
             print("Profile updated successfully # DEBUG TRUE")
-            return True, ""
+            return True
         except mysql.connector.Error as err:
             print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
-            return False, "dberror" 
+            return False
           
         finally:
             cursor.close()
 
     def createProfile(self, role):
-        if not role or not role.strip():
-            print("Error: role is required # DEBUG FALSE" )
-            return False, "empty"
-        
         cursor = db.cursor()
         query = """
             INSERT INTO userprofile (
@@ -205,13 +195,12 @@ class UserProfile:
             cursor.execute(query, (role,))
             db.commit()
             print("Profile created successfully # DEBUG TRUE")
-            return True,""
+            return True
         except mysql.connector.Error as err:
             print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
-            return False, "dberror"
+            return False
         
-            
         finally:
             cursor.close()
     
@@ -466,9 +455,12 @@ class CleanerService:
             if cursor.rowcount > 0:
                 print("Service updated successfully!")
             else:
-             print("No service found with the provided cleaner_id and service_id.")
+                print("No service found with the provided cleaner_id and service_id.")
+            return True    
         except Exception as e:
             print(f"Error updating service: {e}")
+            db.rollback()
+            return False
         finally:
             cursor.close()
 

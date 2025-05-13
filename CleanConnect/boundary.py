@@ -417,17 +417,18 @@ class AdminPage:
         selected_role_name = self.selectedRole.get()
         new_role_id = self.roleMap[selected_role_name]
 
+        if not all([new_name, new_username, new_email, new_password, confirmpw, selected_role_name]):
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return
+        
         if new_password != confirmpw:
             messagebox.showerror("Error", "Passwords do not match.")
             return
         
-        success, code = self.controller.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
+        success = self.controller.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
 
         if not success:
-            if code == "empty":
-                messagebox.showerror("Error", "All fields must be filled out.")
-            else:
-                messagebox.showerror("Error", "Database error")
+            messagebox.showerror("Error", "Failed to update account. Please try again.")
             return
      
         messagebox.showinfo("Success", "Account updated.")
@@ -559,16 +560,20 @@ class AdminPage:
     def addProfile(self):
         # Get the values entered in the fields
         roleName = self.roleEntry.get()
-        success, code = self.addProfcontroller.createProfile(roleName)
+
+        if not roleName:
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return
+        
+        success = self.addProfcontroller.createProfile(roleName)
 
         if not success:
-            if code == "empty":
-                messagebox.showerror("Error", "All fields must be filled out")
-            else:
-                messagebox.showerror("Error", "Failed to add profile. Please try again.")
+            messagebox.showerror("Error", "Failed to add profile. Please try again.")
             return
     
         messagebox.showinfo("Success", "Profile added")
+        self.displayProfilesPage()
+        return
     
     def suspendProfile(self, profile, activate: bool):
         self.susController = controller.SuspendProfileController()
@@ -615,16 +620,19 @@ class AdminPage:
     def submitProfUpdate(self, role_id):
         # Get the values entered in the fields
         new_role = self.new_role_entry.get()
-        success, code = self.controller.updateProfile(role_id, new_role)
+
+        if not new_role:
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return
+        
+        success = self.controller.updateProfile(role_id, new_role)
 
         if not success:
-            if code == "empty":
-                messagebox.showerror("Error", "All fields must be filled out")
-            else:
-                messagebox.showerror("Error", "Failed to update profile. DB Error.")
+            messagebox.showerror("Error", "Failed to update profile. Please try again.")
             return
         
         messagebox.showinfo("Success", "Profile updated")
+
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
     def logout(self):
@@ -695,6 +703,9 @@ class CleanerPage:
             query = self.search_entry.get().strip()
             if query:
                 filtered = self.searchSeriveController.searchService(query, self.user.user_id)
+                if not filtered:
+                    messagebox.showerror("No Results", f"No services found for '{query}'.")
+                    return
                 render_table(filtered)
         
         # Fetch all services for this cleaner
@@ -938,23 +949,33 @@ class CleanerPage:
 
     def updateService(self, cleaner_id, service_id):
         self.updateServiceController = controller.UpdateServiceController()
-        new_price = self.priceEntry.get()
-        new_desc = self.descriptionEntry.get()
+        new_price = self.priceEntry.get().strip()
+        new_desc  = self.descriptionEntry.get().strip()
+
+        if not all([new_price, new_desc]):
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return 
 
         try:
-            new_price = str(new_price)
-            self.updateServiceController.updateService(
-                cleaner_id,
-                service_id,
-                new_price,
-                new_desc
-            )
-            messagebox.showinfo("Success", "Service updated successfully")
-            self.displayMyServicesPage()
-
-
+            price_value = float(new_price)
         except ValueError:
             messagebox.showerror("Invalid Input", "Price must be a number.")
+            return 
+
+        success = self.updateServiceController.updateService(
+            cleaner_id,
+            service_id,
+            price_value,
+            new_desc
+        )
+
+        if success:
+            messagebox.showinfo("Success", "Service updated successfully.")
+            self.displayMyServicesPage()
+        else:
+            messagebox.showerror("Error", "Failed to update service. Please try again.")
+
+        return 
     
     def deleteService(self, cleaner_id, service_id):
         try:
