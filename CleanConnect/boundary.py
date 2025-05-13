@@ -326,23 +326,20 @@ class AdminPage:
             email    = email_entry.get().strip()
             selected_role_name = self.selectedRole.get()
             role_id  = self.roleMap.get(selected_role_name)
+            
+            if not all([name, username, password, email, role_id]): 
+                messagebox.showerror("Error", "Please fill in all fields")
 
             if password != confirm:
                 messagebox.showerror("Error", "Passwords do not match.")
                 return 
 
-            success, code = self.createController.createAccount(
+            success, = self.createController.createAccount(
                 name, username, password, email, role_id
             ) 
 
             if not success:
-                if code == "empty":
-                    messagebox.showerror("Error", "All fields must be filled out")
-                else:
-                    messagebox.showerror(
-                    "Error",
-                    "Failed to create account. Please check the console for details."
-                )
+                messagebox.showerror("Database Error", "Please check backend." )
                 return
             
             messagebox.showinfo("Success", f"Account for {username} created successfully!")

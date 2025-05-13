@@ -87,10 +87,6 @@ class UserAccount:
         return account_list
     
     def createAccount(self, name, username, password, email, role_id):
-        if not all([name, username, password, email, role_id]):
-            print("Error: all fields are required # DEBUG FALSE")
-            return False, "empty"
-
         cursor = db.cursor()
         query = """
             INSERT INTO useraccounts (name, username, password, email, role_id)
