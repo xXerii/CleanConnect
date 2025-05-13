@@ -1,4 +1,5 @@
 import entity
+from datetime import date, timedelta
 
 class UserLoginController:
     def __init__(self):
@@ -166,3 +167,94 @@ class CleanerAnalyticsController:
             "views":      self.model.view_count(cleaner_id),
             "shortlists": self.model.shortlist_count(cleaner_id),
         }
+    
+# ------------------------------------------------------------------
+# Controller for platform-manager booking reports
+# ------------------------------------------------------------------
+class BookingReportController:
+    def __init__(self):
+        self.model = entity.BookingReports()
+
+    def getBookingsByCategory(self, date_from, date_to):
+        return self.model.by_category(date_from, date_to)
+
+    def getCleanersBooked(self, date_from, date_to):
+        return self.model.cleaners_booked(date_from, date_to)
+    
+    def getBookingsByCleaner(self, date_from, date_to):
+        return self.model.getBookingsByCleaner(date_from, date_to)
+    
+
+
+class DailyReportController:
+
+    def __init__(self):
+        self.rep   = BookingReportController()
+        self.today = date.today()
+
+    def category_report(self, start=None, end=None):
+        if start and end:
+            return self.rep.getBookingsByCategory(start, end)
+        return self.rep.getBookingsByCategory(self.today, self.today)
+
+    def cleaner_report(self, start=None, end=None):
+        if start and end:
+            return self.rep.getBookingsByCleaner(start, end)
+        return self.rep.getBookingsByCleaner(self.today, self.today)
+
+    def distinct_cleaners(self, start=None, end=None):
+        if start and end:
+            return self.rep.getCleanersBooked(start, end)
+        return self.rep.getCleanersBooked(self.today, self.today)
+
+
+class WeeklyReportController:
+
+    def __init__(self):
+        self.rep  = BookingReportController()
+        self.to   = date.today()
+        self.frm  = self.to - timedelta(days=6)
+
+    def category_report(self, start=None, end=None):
+        return self.rep.getBookingsByCategory(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def cleaner_report(self, start=None, end=None):
+        return self.rep.getBookingsByCleaner(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def distinct_cleaners(self, start=None, end=None):
+        return self.rep.getCleanersBooked(
+            start or self.frm,
+            end   or self.to
+        )
+
+
+class MonthlyReportController:
+
+    def __init__(self):
+        self.rep  = BookingReportController()
+        self.to   = date.today()
+        self.frm  = self.to - timedelta(days=29)
+
+    def category_report(self, start=None, end=None):
+        return self.rep.getBookingsByCategory(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def cleaner_report(self, start=None, end=None):
+        return self.rep.getBookingsByCleaner(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def distinct_cleaners(self, start=None, end=None):
+        return self.rep.getCleanersBooked(
+            start or self.frm,
+            end   or self.to
+        )
