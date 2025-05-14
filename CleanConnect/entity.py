@@ -837,7 +837,7 @@ class CleanerAnalytics:
 class BookedServices:
     def __init__(self):
         self.db = db  # Assuming `db` is your database connection object
-
+    
     def getBookedServices(self, user_id):
         """
         Fetch booked services for a specific user from the booked_services table.
@@ -864,7 +864,7 @@ class BookedServices:
         result = cursor.fetchall()
         cursor.close()
 
-        # Format the result into a list of dictionaries
+         # Format the result into a list of dictionaries
         booked_services = []
         for row in result:
             booked_services.append({
@@ -876,6 +876,56 @@ class BookedServices:
                 "booked_at": row[5]
             })
 
-        return booked_services
+            return booked_services
+        
+        
+# ------------------------------------------------------------------
+# Booking reports
+# ------------------------------------------------------------------
+class BookingReports:
+    def __init__(self):
+        self.conn = db                          # uses your existing connection
+
+    # ❶ bookings grouped by category
+    def by_category(self, date_from, date_to):
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT cs.`cat/sv_name` AS category,
+                   COUNT(*)          AS booked
+            FROM   booked_services  b
+                   JOIN categories_services cs
+                     ON b.category_id = cs.catsv_id
+            WHERE  DATE(b.booked_at) BETWEEN %s AND %s
+            GROUP  BY cs.`cat/sv_name`
+        """, (date_from, date_to))
+        rows = cur.fetchall()
+        cur.close()
+        
+        return {cat.strip(): cnt for cat, cnt in rows}
+
+    # number of distinct cleaners booked
+    def cleaners_booked(self, date_from, date_to):
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT COUNT(DISTINCT cleaner_id)
+            FROM   booked_services
+            WHERE  DATE(booked_at) BETWEEN %s AND %s
+        """, (date_from, date_to))
+        count = cur.fetchone()[0]
+        cur.close()
+        return count
+
+    def getBookingsByCleaner(self, start, end):
+        cur = db.cursor()
+        cur.execute("""
+            SELECT cleaner_name, COUNT(*)
+            FROM booked_services
+            WHERE booked_at BETWEEN %s AND %s
+            GROUP BY cleaner_name
+        """, (start, end))
+        rows = cur.fetchall(); cur.close()
+        return {name.strip(): cnt for name, cnt in rows}
+
+        
 
 # RANDOM STUFF FOR CI TESTING PLEASE IGNORE
