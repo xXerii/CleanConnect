@@ -843,20 +843,37 @@ class CleanerPage:
         price = self.priceEntry.get()
         description = self.descriptionEntry.get()
 
-        if categoryName and serviceName and price and description:
-            # Add the service using the controller
-            category_id = self.getCategoryIdByName(categoryName)
-            service_id = self.getServiceIdByName(serviceName)
-            # Call addService method
-            success = self.addServiceController.addService(self.user.user_id, category_id ,service_id, price, description)
+        if not (categoryName and serviceName and price and description):
+            return messagebox.showerror("Error", "All fields are required.")
 
-            if success:
-                messagebox.showinfo("Success", "Service added successfully!")
-                self.displayCleanerPage()
-            else:
-                messagebox.showerror("Error", "Failed to add service.")
+        # Convert and validate price
+        try:
+            price_val = float(price)
+        except ValueError:
+            return messagebox.showerror("Error", "Price must be a number.")
+
+        # Look up IDs
+        category_id = self.getCategoryIdByName(categoryName)
+        service_id  = self.getServiceIdByName(serviceName)
+
+        # Call the controller
+        try:
+            success = self.addServiceController.addService(
+                self.user.user_id,
+                category_id,
+                service_id,
+                price_val,
+                description
+            )
+        except Exception as e:
+            return messagebox.showerror("Error", f"An unexpected error occurred:\n{e}")
+
+        # Show result
+        if success:
+            messagebox.showinfo("Success", "Service added successfully!")
+            self.displayCleanerPage()
         else:
-            messagebox.showerror("Error", "All fields are required.")
+            messagebox.showerror("Error", "Failed to add service.")
 
     def openUpdateServiceForm(self, cleaner_id, service_id, current_price, current_desc):
         for widget in self.root.winfo_children():
@@ -889,19 +906,25 @@ class CleanerPage:
         new_desc = self.descriptionEntry.get()
 
         try:
-            new_price = str(new_price)
-            self.updateServiceController.updateService(
+            new_price = float(new_price)
+        except ValueError:
+            return messagebox.showerror("Invalid Input", "Price must be a number.")
+
+        try:
+            updated = self.updateServiceController.updateService(
                 cleaner_id,
                 service_id,
                 new_price,
                 new_desc
             )
+        except Exception as e:
+            return messagebox.showerror("Error", f"An unexpected error occurred:\n{e}")
+
+        if updated:
             messagebox.showinfo("Success", "Service updated successfully")
             self.displayMyServicesPage()
-
-
-        except ValueError:
-            messagebox.showerror("Invalid Input", "Price must be a number.")
+        else:
+            messagebox.showwarning("Not Found", "No matching service to update.")
     
     def deleteService(self, cleaner_id, service_id):
         try:
@@ -909,9 +932,11 @@ class CleanerPage:
             success = self.deleteServiceController.deleteService(cleaner_id, service_id)
             if success:
                 messagebox.showinfo("Success", "Service deleted successfully!")
-                self.displayMyServicesPage()
+                return self.displayMyServicesPage()
+                
             else:
-                messagebox.showerror("Error", "Failed to delete service.")
+                return messagebox.showerror("Error", "Failed to delete service.")
+
         except Exception as e:
             messagebox.showerror("Exception", f"An error occurred: {e}")
 

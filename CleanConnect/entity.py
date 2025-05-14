@@ -166,6 +166,171 @@ class CleanerService:
         self.description = description
         self.service_name = service_name
         self.category_name = category_name
+
+    def addService(self, cleaner_id, category_id, service_id, price, description):
+        print(f"Adding service with cleaner_id={cleaner_id}, category_id={category_id}, service_id={service_id}, price={price}, description={description}")
+        try:
+            cursor = db.cursor()
+
+            # 1) Check for an existing row with the same cleaner_id & service_id
+            dup_check_sql = """
+                SELECT 1
+                FROM cleaner_service
+                WHERE cleaner_id = %s
+                AND service_id = %s
+                LIMIT 1
+            """
+            cursor.execute(dup_check_sql, (cleaner_id, service_id))
+            if cursor.fetchone():
+            # already exists → bail out
+                return False
+            
+            query = """
+                INSERT INTO cleaner_service (cleaner_id, category_id, service_id, price, description)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (cleaner_id, category_id, service_id, price, description))
+            db.commit()
+            return True
+        
+        except Exception as e:
+            print(f"Error adding service: {e}")
+            db.rollback()
+            return False
+        finally:
+            cursor.close()
+    
+    def getCleanerServicesByUser(self, user_id):
+        cursor = db.cursor()
+        query = """
+            SELECT cs.cleaner_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
+            FROM cleaner_service cs
+            JOIN categories_services s ON cs.service_id = s.catsv_id
+            JOIN categories_services c ON cs.category_id = c.catsv_id
+            WHERE cs.cleaner_id = %s
+        """
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        services = []
+        for row in rows:
+            service_obj = CleanerService(
+                cleaner_id=row[0],
+                service_id=row[1],
+                price=row[2],
+                description=row[3]
+            )
+            service_obj.service_name = row[4]
+            service_obj.category_name = row[5]
+            services.append(service_obj)
+
+        return services
+    
+    def updateService(self, cleaner_id, service_id, new_price, new_description):
+        try:
+            print(f"Trying to update with cleaner_id={cleaner_id}, service_id={service_id}, new_price={new_price}, new_description={new_description}")
+            cursor = db.cursor()
+            query = """
+                UPDATE cleaner_service
+                    SET price       = %s,
+                        description = %s
+                  WHERE cleaner_id  = %s
+                    AND service_id  = %s
+            """
+            cursor.execute(query, (new_price, new_description, cleaner_id, service_id))
+            db.commit()
+
+        # cursor.rowcount is the number of rows affected by the last execute()
+            if cursor.rowcount > 0:
+                print("Service updated successfully!")
+                return True
+            else:
+                print("No service found with the provided cleaner_id and service_id.")
+                return False
+
+        except Exception as e:
+            print(f"Error updating service: {e}")
+            db.rollback()
+            return False
+
+        finally:
+                cursor.close()
+    
+    def deleteService(self, cleaner_id, service_id):
+        try:
+            cursor = db.cursor()
+            # Use sub queries to delete 
+            query = """ 
+                DELETE FROM cleaner_service
+                WHERE clean_svc_id = (
+                SELECT clean_svc_id
+                FROM cleaner_service
+                WHERE cleaner_id = %s AND service_id = %s
+                LIMIT 1
+                )
+             """
+            cursor.execute(query, (cleaner_id, service_id))
+            db.commit()
+            if cursor.rowcount > 0:
+                print(f"Service with cleaner_id={cleaner_id} and service_id={service_id} deleted successfully!")
+                return True
+            else:
+                print(f"No service found with cleaner_id={cleaner_id} and service_id={service_id}")
+                return False
+        except Exception as e:
+            print(f"Error deleting service: {e}")
+            return False
+        finally:
+            cursor.close()
+    
+    def searchCleanerServices(self, search_query,cleaner_id):
+        cursor = db.cursor()
+        query = """
+                SELECT cs.clean_svc_id, cs.cleaner_id, cs.category_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
+                FROM `cleaner_service` cs
+                JOIN `categories_services` s ON cs.service_id = s.`catsv_id`
+                JOIN `categories_services` c ON cs.category_id = c.`catsv_id`
+                WHERE s.`cat/sv_name` LIKE %s AND cs.cleaner_id = %s
+        """
+        cursor.execute(query, (f"%{search_query}%",cleaner_id))
+        services = cursor.fetchall()
+        cursor.close()
+
+        service_list = []
+        for service in services:
+            service_list.append(CleanerService(service[0], service[1], service[2], service[3], service[4], service[5], service[6], service[7]))
+        return service_list
+    
+    def getJobHistoryByCleaner(self, cleaner_id):
+        cursor = db.cursor()
+        query = """
+            SELECT 
+            jh.cleaner_id, jh.booked_by, c.`cat/sv_name` AS service_provided, jh.total_charged,
+            jh.booked_at
+            FROM job_history jh
+            JOIN categories_services c 
+            ON jh.service_id = c.catsv_id
+            WHERE jh.cleaner_id = %s
+            ORDER BY 
+            STR_TO_DATE(jh.booked_at, '%d/%m/%y') ASC
+        """
+        cursor.execute(query, (cleaner_id,))
+        result = cursor.fetchall()
+        cursor.close()
+
+        # Convert tuples to dictionaries
+        job_history = []
+        for row in result:
+            job_history.append({
+                "cleaner_id": row[0],
+                "booked_by": row[1],
+                "service_provided": row[2],
+                "total_charged": row[3],
+                "booked_at": row[4]
+            })
+
+        return job_history
     
     def getCleanerProfile(self, cleaner_id):
         cursor = db.cursor()
@@ -281,141 +446,8 @@ class CleanerService:
             services.append(service_obj)
 
         return services
-        
-    def addService(self, cleaner_id, category_id, service_id, price, description):
-        print(f"Adding service with cleaner_id={cleaner_id}, category_id={category_id}, service_id={service_id}, price={price}, description={description}")
-        cursor = db.cursor()
-        query = """
-            INSERT INTO cleaner_service (cleaner_id, category_id,service_id, price, description)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (cleaner_id, category_id, service_id, price, description))
-        db.commit()
-        cursor.close()
-
-        return True
-
-    def getCleanerServicesByUser(self, user_id):
-        cursor = db.cursor()
-        query = """
-            SELECT cs.cleaner_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
-            FROM cleaner_service cs
-            JOIN categories_services s ON cs.service_id = s.catsv_id
-            JOIN categories_services c ON cs.category_id = c.catsv_id
-            WHERE cs.cleaner_id = %s
-        """
-        cursor.execute(query, (user_id,))
-        rows = cursor.fetchall()
-        cursor.close()
-
-        services = []
-        for row in rows:
-            service_obj = CleanerService(
-                cleaner_id=row[0],
-                service_id=row[1],
-                price=row[2],
-                description=row[3]
-            )
-            service_obj.service_name = row[4]
-            service_obj.category_name = row[5]
-            services.append(service_obj)
-
-        return services
     
-    def updateService(self, cleaner_id, service_id, new_price, new_description):
-        try:
-            print(f"Trying to update with cleaner_id={cleaner_id}, service_id={service_id}, new_price={new_price}, new_description={new_description}")
-            cursor = db.cursor()
-            query = """
-                UPDATE cleaner_service
-                SET price = %s, description = %s
-                WHERE cleaner_id = %s AND service_id = %s
-            """
-            cursor.execute(query, (new_price, new_description, cleaner_id, service_id))
-            db.commit()
-            if cursor.rowcount > 0:
-                print("Service updated successfully!")
-            else:
-             print("No service found with the provided cleaner_id and service_id.")
-        except Exception as e:
-            print(f"Error updating service: {e}")
-        finally:
-            cursor.close()
-
-    def deleteService(self, cleaner_id, service_id):
-        try:
-            cursor = db.cursor()
-            # Use sub queries to delete 
-            query = """ 
-                DELETE FROM cleaner_service
-                WHERE clean_svc_id = (
-                SELECT clean_svc_id
-                FROM cleaner_service
-                WHERE cleaner_id = %s AND service_id = %s
-                LIMIT 1
-                )
-             """
-            cursor.execute(query, (cleaner_id, service_id))
-            db.commit()
-            if cursor.rowcount > 0:
-                print(f"Service with cleaner_id={cleaner_id} and service_id={service_id} deleted successfully!")
-                return True
-            else:
-                print(f"No service found with cleaner_id={cleaner_id} and service_id={service_id}")
-                return False
-        except Exception as e:
-            print(f"Error deleting service: {e}")
-            return False
-        finally:
-            cursor.close()
-        
-    def searchCleanerServices(self, search_query,cleaner_id):
-        cursor = db.cursor()
-        query = """
-                SELECT cs.clean_svc_id, cs.cleaner_id, cs.category_id, cs.service_id, cs.price, cs.description, s.`cat/sv_name` AS service_name, c.`cat/sv_name` AS category_name
-                FROM `cleaner_service` cs
-                JOIN `categories_services` s ON cs.service_id = s.`catsv_id`
-                JOIN `categories_services` c ON cs.category_id = c.`catsv_id`
-                WHERE s.`cat/sv_name` LIKE %s AND cs.cleaner_id = %s
-        """
-        cursor.execute(query, (f"%{search_query}%",cleaner_id))
-        services = cursor.fetchall()
-        cursor.close()
-
-        service_list = []
-        for service in services:
-            service_list.append(CleanerService(service[0], service[1], service[2], service[3], service[4], service[5], service[6], service[7]))
-        return service_list
     
-    def getJobHistoryByCleaner(self, cleaner_id):
-        cursor = db.cursor()
-        query = """
-            SELECT 
-            jh.cleaner_id, jh.booked_by, c.`cat/sv_name` AS service_provided, jh.total_charged,
-            jh.booked_at
-            FROM job_history jh
-            JOIN categories_services c 
-            ON jh.service_id = c.catsv_id
-            WHERE jh.cleaner_id = %s
-            ORDER BY 
-            STR_TO_DATE(jh.booked_at, '%d/%m/%y') ASC
-        """
-        cursor.execute(query, (cleaner_id,))
-        result = cursor.fetchall()
-        cursor.close()
-
-        # Convert tuples to dictionaries
-        job_history = []
-        for row in result:
-            job_history.append({
-                "cleaner_id": row[0],
-                "booked_by": row[1],
-                "service_provided": row[2],
-                "total_charged": row[3],
-                "booked_at": row[4]
-            })
-
-        return job_history
 
 
 class CategoryService:
