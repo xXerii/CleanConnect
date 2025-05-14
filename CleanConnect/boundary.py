@@ -151,8 +151,10 @@ class AdminPage:
                 filtered_accounts = self.searchController.searchAccounts(query)
                 if not filtered_accounts:
                     messagebox.showerror("No Results", f"No accounts found for '{query}'.")
-                else:
+                else
                     render_table(filtered_accounts)
+            else:
+                render_table(self.all_accounts)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewAccounts())).grid(row=0, column=3, padx=5)
@@ -335,7 +337,7 @@ class AdminPage:
                 messagebox.showerror("Error", "Passwords do not match.")
                 return 
 
-            success, = self.createController.createAccount(
+            success = self.createController.createAccount(
                 name, username, password, email, role_id
             ) 
 
