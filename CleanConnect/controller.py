@@ -249,13 +249,7 @@ class SuspendProfileController:
     
     def setProfileSuspension(self, id: int, suspended: bool):
         return self.userProfile.setProfileSuspension(id, suspended)
-    
 
-# Cleaners Controllers
-
-# Home owner Controllers
-
-# Platform Manager Controllers
 class BookedServicesController:
     def __init__(self):
         self.bookedServices = entity.BookedServices()
@@ -264,11 +258,13 @@ class BookedServicesController:
         """
         Fetch booked services for a specific user.
         """
-        return self.bookedServices.getBookedServices(user_id)
-    
-# ------------------------------------------------------------------
-# Controller for platform-manager booking reports
-# ------------------------------------------------------------------
+        return self.bookedServices.getBookedServices(user_id)    
+
+# Cleaners Controllers
+
+# Home owner Controllers
+
+# Platform Manager Controllers
 class BookingReportController:
     def __init__(self):
         self.model = entity.BookingReports()
@@ -281,11 +277,8 @@ class BookingReportController:
     
     def getBookingsByCleaner(self, date_from, date_to):
         return self.model.getBookingsByCleaner(date_from, date_to)
-    
-
 
 class DailyReportController:
-
     def __init__(self):
         self.rep   = BookingReportController()
         self.today = date.today()
@@ -305,9 +298,7 @@ class DailyReportController:
             return self.rep.getCleanersBooked(start, end)
         return self.rep.getCleanersBooked(self.today, self.today)
 
-
 class WeeklyReportController:
-
     def __init__(self):
         self.rep  = BookingReportController()
         self.to   = date.today()
@@ -331,9 +322,7 @@ class WeeklyReportController:
             end   or self.to
         )
 
-
 class MonthlyReportController:
-
     def __init__(self):
         self.rep  = BookingReportController()
         self.to   = date.today()

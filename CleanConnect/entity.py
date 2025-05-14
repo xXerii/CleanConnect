@@ -790,13 +790,6 @@ class CategoryService:
         return category_list
 
 
-
-
-
-        
-
-
-        
 class CleanerAnalytics:
     """Logs views & short-lists and returns live counts."""
     def __init__(self):
@@ -878,7 +871,7 @@ class BookedServices:
 
             return booked_services
         
-        
+
 # ------------------------------------------------------------------
 # Booking reports
 # ------------------------------------------------------------------

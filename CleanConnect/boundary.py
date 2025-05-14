@@ -1,7 +1,11 @@
 import controller
 import tkinter as tk
 from tkinter import *
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
+import datetime
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import calendar
 
 # Please use this dummy function as placeholder for the buttons if needed
 def dummy():
@@ -1112,6 +1116,7 @@ class HomeOwnerPage:
         Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
+        Button(self.root, text="View Services", command=self.displayAvailableServicePage).pack(pady=5)
         Button(self.root, text="View Shortlist", command=self.displayShortlistPage).pack(pady=5)
         Button(self.root, text="View Services Booked", command=self.viewBookedServices).pack(pady=5)
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
@@ -1261,7 +1266,6 @@ class HomeOwnerPage:
             messagebox.showwarning("Shortlist", "No matching shortlist entry found or failed to remove!")
 
         
-  
     def displayCleanerProfilePage(self,cleaner_id):
         countsCtl = controller.CleanerAnalyticsController()
         countsCtl.logView(cleaner_id, self.user.user_id)
@@ -1567,9 +1571,160 @@ class PlatformMngrPage:
 
         # Add Admin features here
         Button(self.root, text="View Cleaning Categories", command=self.viewCategoriesPage).pack(pady=5)
-        Button(self.root, text="Generate Reports etc", command=dummy).pack(pady=5)
+        Button(self.root, text="View Reports", command=self.displayReportsPage).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+    
+    def _parse_date(self, s: str, label: str) -> datetime.date | None:
+        """
+        Convert 'YYYY-MM-DD' string to date.
+        Shows an error and returns None on bad input.
+        """
+        try:
+            return datetime.date.fromisoformat(s.strip())
+        except ValueError:
+            messagebox.showerror("Date error",
+                f"Please enter {label} in YYYY-MM-DD format.")
+            return None
+
+    # --------------------------------------------------------------
+    #  Reports UI
+    # --------------------------------------------------------------
+    def displayReportsPage(self):
+
+        for w in self.root.winfo_children():
+            w.destroy()
+
+        tk.Label(self.root, text="Platform Reports",
+                font=("Arial", 24)).pack(pady=20)
+
+        # ───── period selector frame ──────────────────────────────────────
+        sel = tk.Frame(self.root); sel.pack(pady=10)
+        bg = "#2b2b2b"
+
+        # --- DAILY --------------------------------------------------------
+        row1 = tk.Frame(self.root, bg=bg); row1.pack(pady=4)
+        tk.Label(row1, text="Daily", bg=bg, fg="white").pack(side="left", padx=8)
+
+        self.day_var  = tk.StringVar(value=str(datetime.date.today()))
+        tk.Entry(row1, textvariable=self.day_var, width=10).pack(side="left")
+
+        tk.Button(row1, text="Show",
+                command=lambda: (
+                    (d := self._parse_date(self.day_var.get(), "a date"))
+                    and self.showReport("daily", d, d)
+                )).pack(side="left", padx=6)
+
+        # --- WEEKLY -------------------------------------------------------
+        row2 = tk.Frame(self.root, bg=bg); row2.pack(pady=4)
+        tk.Label(row2, text="Week containing", bg=bg, fg="white")\
+        .pack(side="left", padx=8)
+
+        self.week_var = tk.StringVar(value=str(datetime.date.today()))
+        tk.Entry(row2, textvariable=self.week_var, width=10).pack(side="left")
+
+        tk.Button(row2, text="Show",
+                command=self._handle_week).pack(side="left", padx=6)
+
+        # --- MONTHLY ------------------------------------------------------
+        row3 = tk.Frame(self.root, bg=bg); row3.pack(pady=4)
+        tk.Label(row3, text="Month (YYYY-MM)", bg=bg, fg="white")\
+        .pack(side="left", padx=8)
+
+        self.month_var = tk.StringVar(value=datetime.date.today().strftime("%Y-%m"))
+        tk.Entry(row3, textvariable=self.month_var, width=7).pack(side="left")
+
+        tk.Button(row3, text="Show",
+                command=self._handle_month).pack(side="left", padx=6)
+
+        # headline result
+        self.result = tk.Label(self.root, font=("Consolas", 14), justify="left")
+        self.result.pack(pady=10)
+
+        tk.Button(self.root, text="Back",
+                command=self.PlatformMngrPage).pack(pady=10)
+
+    def _handle_week(self):
+        any_day = self._parse_date(self.week_var.get(), "a date")
+        if not any_day:
+            return
+        start = any_day - datetime.timedelta(days=any_day.weekday())  # Monday
+        end   = start + datetime.timedelta(days=6)                    # Sunday
+        self.showReport("weekly", start, end)
+
+    def _handle_month(self):
+        try:
+            first = datetime.datetime.strptime(self.month_var.get().strip(),
+                                            "%Y-%m").date().replace(day=1)
+        except ValueError:
+            messagebox.showerror("Date error",
+                                "Enter month as YYYY-MM, e.g. 2025-05")
+            return
+        days = calendar.monthrange(first.year, first.month)[1]
+        last = first.replace(day=days)
+        self.showReport("monthly", first, last)
+
+    def _render_report(self, period: str, frm: datetime.date, to: datetime.date):
+
+        if period == "daily":
+            rep = controller.DailyReportController()
+        elif period == "weekly":
+            rep = controller.WeeklyReportController()
+        else:                     # monthly
+            rep = controller.MonthlyReportController()
+
+        cat_data     = rep.category_report(frm, to)
+        cleaners     = rep.distinct_cleaners(frm, to)
+        cleaner_data = rep.cleaner_report(frm, to)
+
+        self.result.config(text=f"Unique cleaners booked: {cleaners}")
+
+        if not cat_data:
+            messagebox.showinfo("No data")
+            return
+
+        pretty = {"daily":   "Daily",
+                "weekly":  "Weekly",
+                "monthly": "Monthly"}[period]
+        
+        range_txt = f"{frm:%d %b %Y} – {to:%d %b %Y}"
+
+        # bookings by category chart
+        fig1, ax1 = plt.subplots(figsize=(6, 3.5))
+        bars = ax1.bar(cat_data.keys(), cat_data.values(), width=0.55)
+        ax1.set_title(f"{pretty} bookings ({range_txt})")
+        ax1.set_ylabel("Bookings")
+        ax1.set_xticks(range(len(cat_data)))
+        ax1.set_xticklabels(cat_data.keys(), rotation=25, ha="right")
+        fig1.tight_layout()
+
+        # bookings by cleaner chart
+        fig2, ax2 = plt.subplots(figsize=(6, 2.8))
+        ax2.bar(cleaner_data.keys(), cleaner_data.values(),
+                width=0.55, color="#4c72b0")
+        ax2.set_title(f"{pretty} cleaners booked ({range_txt})")
+        ax2.set_ylabel("Count")
+        ax2.set_xticks(range(len(cleaner_data)))
+        ax2.set_xticklabels(cleaner_data.keys(), rotation=25, ha="right")
+        for side in ("top", "right"):
+            ax2.spines[side].set_visible(False)
+        fig2.tight_layout()
+
+        if hasattr(self, "chart_frame"):
+            self.chart_frame.destroy()           # clear old charts if they exist
+        self.chart_frame = tk.Frame(self.root, bg="#ffffff", relief="sunken")
+        self.chart_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        for f in (fig1, fig2):                   # embed both charts
+            cvs = FigureCanvasTkAgg(f, master=self.chart_frame)
+            cvs.draw()
+            cvs.get_tk_widget().pack(
+                side="top", fill="both", expand=True, pady=6)
+            
+    def showReport(self, period: str,
+                   frm: datetime.date, to: datetime.date):
+        self.root.after_idle(
+            lambda: self._render_report(period, frm, to))
 
     def viewCategoriesPage(self):
     # Clear the current page, but leave the search bar and buttons intact
