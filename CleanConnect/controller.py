@@ -1,4 +1,5 @@
 import entity
+from datetime import date, timedelta
 
 class UserLoginController:
     def __init__(self):
@@ -21,7 +22,6 @@ class SearchAccountsController:
     def searchAccounts(self, username):
         return self.userAccount.searchAccounts(username)
     
-    
 class UpdateAccountsController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
@@ -37,13 +37,6 @@ class CreateAccountsController:
         # Create a new user account
         return self.userAccount.createAccount(name, username, password ,email, role_id)
 
-class SuspendAccountsController:
-    def __init__(self):
-        self.userAccount = entity.UserAccount()
-    
-    def setAccountSuspension(self, id: int, suspended: bool):
-        return self.userAccount.setSuspended(id, suspended)
-    
     
 class ViewProfileController:
     def __init__(self):
@@ -66,7 +59,6 @@ class UpdateProfileController:
     def updateProfile(self,role_id, new_role):
         return self.userProfile.updateProfile(role_id, new_role)
     
-    
 class AddServiceController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
@@ -88,21 +80,29 @@ class FetchServicesByCategoryController:
     def fetchServicesByCategory(self, parentCat_id):
         return self.categoryService.getServicesByCategory(parentCat_id)
 
-class FetchAllAvailableServicesController:
+class ViewAllAvailableServicesController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
     
-    def fetchAllAvailableService(self):
+    def getAllAvailableService(self):
         # Fetch all services available
         return self.cleanerService.getAllAvailableService()
 
-class SearchAllAvailableServicesByCategoryController:
+class SearchAllAvailableServicesController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
     
-    def fetchSearchServiceCategoryResult(self, search_query):
+    def searchAllServices(self, search_query):
         # Fetch services based on selected category
-        return self.cleanerService.searchServiceByCategory(search_query)
+        return self.cleanerService.searchAllServices(search_query)
+    
+class SearchShortlistedServicesController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def fetchShortlistedServiceCategoryResult(self, user_id, search_query):
+        # Call the model method to get the shortlisted services by category
+        return self.cleanerService.searchShortlistedServicesByCategory(user_id, search_query)
 
 class FetchCleanerProfileController:
     def __init__(self):
@@ -118,6 +118,20 @@ class FetchCleanerAllServicesController:
     def fetchCleanerAllService(self, user_id):
         # Fetch all services with the associated cleaner and category info
         return self.cleanerService.getCleanerServicesByUser(user_id)
+    
+class FetchCleanerByCatController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def fetchCleanerByCat(self,category_id):
+        return self.categoryService.fetchCleanersByCategory(category_id)
+
+class ViewShortlistedServicesController:
+    def __init__(self):
+        self.model = entity.CleanerService()
+
+    def getShortlistedServices(self, homeowner_id):
+        return self.model.getShortlistedServices(homeowner_id)
 
 class UpdateServiceController:
     def __init__(self):
@@ -150,19 +164,187 @@ class JobHistoryController:
         """
         return self.cleaner_service.getJobHistoryByCleaner(cleaner_id)
 
-class CleanerAnalyticsController:
+class CleanerProfViewsController:
     def __init__(self):
         self.model = entity.CleanerAnalytics()
 
-    # façade methods used by the UI
     def logView(self, cleaner_id, viewer_id):
         self.model.log_view(cleaner_id, viewer_id)
 
-    def toggleShortlist(self, cleaner_id, homeowner_id):
-        self.model.toggle_shortlist(cleaner_id, homeowner_id)
+    def getViewCount(self, cleaner_id):
+        return self.model.view_count(cleaner_id)
 
-    def getCounts(self, cleaner_id):
-        return {
-            "views":      self.model.view_count(cleaner_id),
-            "shortlists": self.model.shortlist_count(cleaner_id),
-        }
+class CleanerShortlistsViewsController:
+    def __init__(self):
+        self.model = entity.CleanerAnalytics()
+
+    def getShortlistCount(self, cleaner_id):
+        return self.model.shortlist_count(cleaner_id)
+
+class AddShortlistController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        return self.cleanerService.addShortlist(cleaner_id, homeowner_id, category_id, service_id)    
+
+class RemoveShortlistController:
+    def __init__(self):
+        self.cleanerService = entity.CleanerService()
+
+    def removeShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        return self.cleanerService.removeShortlist(cleaner_id, homeowner_id, category_id, service_id)
+    
+class AddCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def addCategory(self, cat_sv_name, cat_desc):
+        return self.categoryService.addCategory(cat_sv_name, cat_desc)
+
+class AddPlatformServiceController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def addService(self, cat_sv_name, parentCat_id):
+        return self.categoryService.addNewService(cat_sv_name, parentCat_id)
+
+class DeleteCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def deleteCategory(self, catsv_id):
+        return self.categoryService.deleteCategory(catsv_id)
+
+class UpdateCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def updateCategoryDesc(self, catsv_id, new_desc):
+        return self.categoryService.updateCategoryDesc(catsv_id, new_desc)
+
+class SearchCategoryController:
+    def __init__(self):
+        self.categoryService = entity.CategoryService()
+
+    def searchCategories(self, search_query):
+        return self.categoryService.searchCategories(search_query)
+    
+# User Admins Controllers
+class CreateProfileController:
+    def __init__(self):
+        self.userProfile = entity.UserProfile()
+    
+    def createProfile(self, role):
+        # Create a new user account
+        return self.userProfile.createProfile(role)
+    
+class SuspendAccountsController:
+    def __init__(self):
+        self.userAccount = entity.UserAccount()
+    
+    def setAccountSuspension(self, id: int, suspended: bool):
+        return self.userAccount.setAccountSuspension(id, suspended)
+
+class SuspendProfileController:
+    def __init__(self):
+        self.userProfile = entity.UserProfile()
+    
+    def setProfileSuspension(self, id: int, suspended: bool):
+        return self.userProfile.setProfileSuspension(id, suspended)
+
+class BookedServicesController:
+    def __init__(self):
+        self.bookedServices = entity.BookedServices()
+
+    def fetchBookedServices(self, user_id):
+        """
+        Fetch booked services for a specific user.
+        """
+        return self.bookedServices.getBookedServices(user_id)    
+
+# Cleaners Controllers
+
+# Home owner Controllers
+
+# Platform Manager Controllers
+class BookingReportController:
+    def __init__(self):
+        self.model = entity.BookingReports()
+
+    def getBookingsByCategory(self, date_from, date_to):
+        return self.model.by_category(date_from, date_to)
+
+    def getCleanersBooked(self, date_from, date_to):
+        return self.model.cleaners_booked(date_from, date_to)
+    
+    def getBookingsByCleaner(self, date_from, date_to):
+        return self.model.getBookingsByCleaner(date_from, date_to)
+
+class DailyReportController:
+    def __init__(self):
+        self.rep   = BookingReportController()
+        self.today = date.today()
+
+    def category_report(self, start=None, end=None):
+        if start and end:
+            return self.rep.getBookingsByCategory(start, end)
+        return self.rep.getBookingsByCategory(self.today, self.today)
+
+    def cleaner_report(self, start=None, end=None):
+        if start and end:
+            return self.rep.getBookingsByCleaner(start, end)
+        return self.rep.getBookingsByCleaner(self.today, self.today)
+
+    def distinct_cleaners(self, start=None, end=None):
+        if start and end:
+            return self.rep.getCleanersBooked(start, end)
+        return self.rep.getCleanersBooked(self.today, self.today)
+
+class WeeklyReportController:
+    def __init__(self):
+        self.rep  = BookingReportController()
+        self.to   = date.today()
+        self.frm  = self.to - timedelta(days=6)
+
+    def category_report(self, start=None, end=None):
+        return self.rep.getBookingsByCategory(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def cleaner_report(self, start=None, end=None):
+        return self.rep.getBookingsByCleaner(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def distinct_cleaners(self, start=None, end=None):
+        return self.rep.getCleanersBooked(
+            start or self.frm,
+            end   or self.to
+        )
+
+class MonthlyReportController:
+    def __init__(self):
+        self.rep  = BookingReportController()
+        self.to   = date.today()
+        self.frm  = self.to - timedelta(days=29)
+
+    def category_report(self, start=None, end=None):
+        return self.rep.getBookingsByCategory(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def cleaner_report(self, start=None, end=None):
+        return self.rep.getBookingsByCleaner(
+            start or self.frm,
+            end   or self.to
+        )
+
+    def distinct_cleaners(self, start=None, end=None):
+        return self.rep.getCleanersBooked(
+            start or self.frm,
+            end   or self.to
+        )

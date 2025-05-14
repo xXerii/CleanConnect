@@ -40,13 +40,12 @@ class UserAccount:
         account_list = []
         for account in accounts:
             user = UserAccount(account[0], account[1], account[2], account[3], account[4], account[5], account[6])
-            user.role = role_map.get(user.role_id, "Unknown")  # add role_name as extra field
+            user.role = role_map.get(user.role_id, "Unknown")
             account_list.append(user)
 
         return account_list
     
     def updateAccount(self, user_id, new_name, new_username, new_email, new_password, new_role_id):
-        # Perform the database update logic for the provided user ID
         cursor = db.cursor()
         query = """
             UPDATE useraccounts
@@ -57,9 +56,20 @@ class UserAccount:
                 role_id = %s
             WHERE user_id = %s
         """
-        cursor.execute(query, (new_name, new_username, new_email, new_password, new_role_id, user_id))
-        db.commit()
-        cursor.close()
+        try:
+            cursor.execute(
+                query,
+                (new_name, new_username, new_email, new_password, new_role_id, user_id)
+            )
+            db.commit()
+            print("Account updated successfully # DEBUG TRUE")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False
+        finally:
+            cursor.close()
 
     def searchAccounts(self, search_query):
         cursor = db.cursor()
@@ -80,12 +90,14 @@ class UserAccount:
             VALUES (%s, %s, %s, %s, %s)
         """
         try:
-            cursor.execute(query, (name, username, password ,email, role_id))
+            cursor.execute(query, (name, username, password, email, role_id))
             db.commit()
-            print("Account created successfully")
+            print("Account created successfully # DEBUG TRUE")
+            return True
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            print(f"Error: {err} # DEBUG FALSE")
             db.rollback()
+            return False
         finally:
             cursor.close()
 
@@ -107,14 +119,21 @@ class UserAccount:
         uid, name, username, email, pw, role, suspended = row
         return UserAccount(uid, name, username, email, pw, role, suspended)
         
-    def setSuspended(self, user_id: int, suspended: bool):
-        cursor = db.cursor()
-        cursor.execute(
-            "UPDATE useraccounts SET suspended=%s WHERE user_id=%s",
-            (1 if suspended else 0, user_id)
-        )
-        db.commit()
-        cursor.close()
+    def setAccountSuspension(self, user_id: int, suspended: bool):
+        try:
+            cursor = db.cursor()
+            cursor.execute(
+                "UPDATE useraccounts SET suspended=%s WHERE user_id=%s",
+                (1 if suspended else 0, user_id)
+            )
+            db.commit()
+            return True
+        except Exception as e:
+            print(f"Error setting suspension status: {e} # DEBUG FALSE")
+            db.rollback()
+            return False
+        finally:
+            cursor.close()
 
 class UserProfile:
     def __init__(self, role_id=None, role=None, suspended=None):
@@ -152,9 +171,68 @@ class UserProfile:
         # Perform the database update logic for the provided user ID
         cursor = db.cursor()
         query = "UPDATE userprofile SET role =%s WHERE role_id = %s "
-        cursor.execute(query, (new_role, role_id))
-        db.commit()
-        cursor.close()
+        try:
+            cursor.execute(query, (new_role, role_id))
+            db.commit()
+            print("Profile updated successfully # DEBUG TRUE")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False
+          
+        finally:
+            cursor.close()
+
+    def createProfile(self, role):
+        cursor = db.cursor()
+        query = """
+            INSERT INTO userprofile (
+                role
+            ) VALUES (%s)
+        """
+        try:
+            cursor.execute(query, (role,))
+            db.commit()
+            print("Profile created successfully # DEBUG TRUE")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False
+        
+        finally:
+            cursor.close()
+    
+    def setProfileSuspension(self, role_id: int, suspended: bool):
+        try:
+            cursor = db.cursor(buffered=True)
+
+            sql1 = """
+                UPDATE userprofile
+                   SET suspended= %s
+                 WHERE role_id = %s
+            """
+            cursor.execute(sql1, (suspended, role_id))
+
+            sql2 = """
+                UPDATE useraccounts
+                SET suspended = %s
+                WHERE role_id = %s
+                """
+            cursor.execute(sql2, (suspended, role_id))
+
+            db.commit()
+            return True
+
+        except Exception as e:
+            print("Error toggling profile:", e)
+            db.rollback()
+            return False
+
+        finally:
+            cursor.close()
+        
 
 class CleanerService:
     def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None, service_name=None, category_name=None):
@@ -364,7 +442,7 @@ class CleanerService:
 
         return result
 
-    def searchServiceByCategory(self, search_query):
+    def searchAllServices(self, search_query):
         cursor = db.cursor()
         query = """
         SELECT 
@@ -383,9 +461,9 @@ class CleanerService:
         INNER JOIN 
             categories_services cat ON cs.category_id = cat.catsv_id
         WHERE 
-            cat.`cat/sv_name` LIKE %s 
+            cat.`cat/sv_name` LIKE %s OR sv.`cat/sv_name` LIKE %s  -- Search both category and service names
         """
-        cursor.execute(query, (f"%{search_query}%",)) 
+        cursor.execute(query, (f"%{search_query}%", f"%{search_query}%")) 
         rows = cursor.fetchall()
         cursor.close()
 
@@ -404,6 +482,47 @@ class CleanerService:
             service_list.append(service_obj)
 
         return service_list
+    
+    def searchShortlistedServicesByCategory(self, user_id, search_query):
+        cursor = db.cursor()
+        query = """
+        SELECT 
+            sl.cleaner_id,
+            sl.category_id,
+            sl.service_id,
+            cs.price,
+            sv.`cat/sv_name` AS service_name,
+            cat.`cat/sv_name` AS category_name
+        FROM 
+            shortlist sl
+        JOIN 
+            categories_services sv ON sl.service_id = sv.catsv_id
+        JOIN 
+            categories_services cat ON sl.category_id = cat.catsv_id
+        JOIN 
+            cleaner_service cs ON sl.service_id = cs.service_id
+        WHERE 
+            sl.homeowner_id = %s AND (sv.`cat/sv_name` LIKE %s OR cat.`cat/sv_name` LIKE %s)
+        """
+        cursor.execute(query, (user_id, f"%{search_query}%", f"%{search_query}%")) 
+        rows = cursor.fetchall()
+        print(rows)
+        cursor.close()
+
+        service_list = []
+        for row in rows:
+            service_obj = CleanerService(
+                cleaner_id=row[0],
+                category_id=row[1],
+                service_id=row[2],
+                price=row[3],
+                service_name=row[4],
+                category_name=row[5]
+            )
+            service_list.append(service_obj)
+
+        return service_list
+
 
     def getAllAvailableService(self):
         cursor = db.cursor()
@@ -447,15 +566,100 @@ class CleanerService:
 
         return services
     
+    def getShortlistedServices(self, homeowner_id):
+        cursor = db.cursor()
+        cursor.execute("""
+                SELECT 
+                    cs.cleaner_id,  -- Cleaner ID
+                    cat.catsv_id AS category_id,  -- Category ID
+                    cs.service_id,  -- Service ID
+                    s.`cat/sv_name` AS service_name,  -- Service Name
+                    cat.`cat/sv_name` AS category_name,  -- Category Name
+                    cs.price  -- Price
+                FROM shortlist sl
+                JOIN cleaner_service cs ON sl.service_id = cs.service_id AND sl.cleaner_id = cs.cleaner_id
+                JOIN categories_services s ON cs.service_id = s.catsv_id  -- Service Name
+                JOIN categories_services cat ON s.parentCat_id = cat.catsv_id  -- Category Name
+                WHERE sl.homeowner_id = %s;
+            """, (homeowner_id,))
+    
+        results = []
+        for row in cursor.fetchall():
+            obj = CleanerService(
+                cleaner_id=row[0],
+                category_id=row[1],
+                service_id=row[2],
+                service_name=row[3],
+                category_name=row[4],
+                price=row[5]
+            )
+            results.append(obj)
+    
+        cursor.close()
+        return results
+    
+     # -------- short-lists ----------
+    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+        cur = db.cursor()
+
+        # Check if the cleaner is already shortlisted
+        cur.execute("""SELECT 1 FROM shortlist
+                   WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
+                (cleaner_id, homeowner_id, category_id, service_id))
+    
+        result = cur.fetchone()
+        print(f"Shortlist check result for cleaner_id {cleaner_id}: {result}")  # Debugging output
+    
+        already_shortlisted = result is not None
+        print(f"Cleaner {cleaner_id} already shortlisted: {already_shortlisted}")  # Debugging output
+    
+        if not already_shortlisted:
+        # Insert the cleaner into the shortlist if not already shortlisted
+            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
+                       VALUES (%s, %s, %s, %s)""",
+                    (cleaner_id, homeowner_id, category_id, service_id))
+            db.commit()
+            print("Record inserted!")  # Debug line
+    
+        cur.close()
+        return not already_shortlisted # Basically returns True if cleaner is added into the shortlist
+    
+    def removeShortlist(self, cleaner_id, homeowner_id,category_id, service_id):
+        cursor = db.cursor()
+        try:
+            query = """
+                DELETE FROM shortlist 
+                WHERE cleaner_id = %s AND homeowner_id = %s 
+                AND category_id = %s AND service_id = %s
+            """
+            cursor.execute(query, (cleaner_id, homeowner_id, category_id, service_id))
+            db.commit()
+
+            if cursor.rowcount > 0:
+                print("Shortlist entry removed successfully.")
+                return True  # Successfully removed
+            else:
+                print("No matching shortlist entry found.")
+                return False  # No matching entry to remove
+            
+        except Exception as e:
+            db.rollback()
+            print("Failed to remove shortlist entry:", e)
+        finally:
+            cursor.close()
+
+
 class CategoryService:
-    def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None):
+    def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None, cat_desc=None):
         self.catsv_id = catsv_id
         self.cat_sv_name = cat_sv_name
         self.parentCat_id = parentCat_id
+        self.cat_desc = cat_desc
+
 
     def getAllCategories(self):
         cursor = db.cursor()
-        cursor.execute("SELECT catsv_id, `cat/sv_name`, parentCat_id FROM categories_services WHERE parentCat_id IS NULL")
+        cursor.execute("SELECT catsv_id, `cat/sv_name`, parentCat_id, cat_desc FROM categories_services WHERE parentCat_id IS NULL")
         rows = cursor.fetchall()
         cursor.close()
         return [CategoryService(*row) for row in rows]
@@ -466,8 +670,150 @@ class CategoryService:
         rows = cursor.fetchall()
         cursor.close()
         return [CategoryService(*row) for row in rows]
+    
+    def fetchCleanersByCategory(self, category_id):
+        cursor = db.cursor()
 
+        query = """
+            SELECT u.name, u.email
+            FROM useraccounts u
+            JOIN cleaner_service cs ON u.user_id = cs.cleaner_id
+            JOIN categories_services cat ON cs.service_id = cat.catsv_id
+            WHERE cat.parentCat_id = %s AND u.role_id = %s
+        """
+        cleaner_role_id = 2  # replace with actual role_id value for cleaners
+        cursor.execute(query, (category_id, cleaner_role_id))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        return [UserAccount(name=row[0], email=row[1]) for row in rows]
+
+    def addCategory(self, cat_sv_name, cat_desc):
+        cursor = db.cursor()
+        try:
+            query = """
+           INSERT INTO categories_services (`cat/sv_name`, parentCat_id, cat_desc)
+            VALUES (%s, NULL, %s) 
+            """
+            cursor.execute(query, (cat_sv_name, cat_desc))
+            db.commit()
+            return True
+    
+        except Exception as e:
+            db.rollback()
+            print("Error adding category:", e)
+            return False
         
+    def addNewService(self, cat_sv_name, parentCat_id):
+        cursor = db.cursor()
+        try:
+        # First, check if the parent category exists
+            cursor.execute("SELECT catsv_id FROM categories_services WHERE catsv_id = %s", (parentCat_id,))
+            result = cursor.fetchone()
+
+            # If the parent category does not exist, create a new one
+            if result is None:
+                print(f"Parent category with ID {parentCat_id} does not exist. Creating a new category...")
+                cursor.execute("""
+                INSERT INTO categories_services (`cat/sv_name`, parentCat_id)
+                VALUES (%s, %s)
+            """, (f"New Category {parentCat_id}", None))  # Insert a new parent category
+                db.commit()
+                parentCat_id = cursor.lastrowid  # Get the ID of the newly created category
+                print(f"New parent category created with ID {parentCat_id}")
+
+            query = """
+            INSERT INTO categories_services (`cat/sv_name`, parentCat_id)
+            VALUES (%s, %s)
+            """
+            cursor.execute(query, (cat_sv_name, parentCat_id))
+            db.commit()
+            return True
+        
+        except Exception as e:
+            # Rollback in case of any error
+            db.rollback()
+
+            # Optionally log the error or print it
+            print(f"Error adding new service: {e}")
+            return False
+
+        finally:
+        # Close the cursor to avoid potential memory leaks
+            cursor.close()
+        
+    def deleteCategory(self, catsv_id): # ON DELETE CASCADE
+        cursor = db.cursor()
+        try:
+            cursor.execute("DELETE FROM categories_services WHERE catsv_id = %s AND parentCat_id IS NULL", (catsv_id,))
+            db.commit()
+            return True
+        except Exception as e:
+            db.rollback()
+            print(f"Error deleting category: {e}")
+            return False
+        finally:
+            cursor.close()
+
+    def updateCategoryDesc(self, catsv_id, new_desc):
+        cursor = db.cursor()
+        try:
+            cursor.execute(
+                "UPDATE categories_services SET cat_desc = %s WHERE catsv_id = %s",
+                (new_desc, catsv_id)
+            )
+            db.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            db.rollback()
+            print(f"Error updating description: {e}")
+            return False
+        finally:
+            cursor.close()
+    
+    def updateCategoryDesc(self, catsv_id, new_desc):
+        cursor = db.cursor()
+        try:
+            cursor.execute(
+                "UPDATE categories_services SET cat_desc = %s WHERE catsv_id = %s",
+                (new_desc, catsv_id)
+            )
+            db.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            db.rollback()
+            print(f"Error updating description: {e}")
+            return False
+        finally:
+            cursor.close()
+    
+    def searchCategories(self, search_query):
+        cursor = db.cursor()
+        sql = """
+            SELECT catsv_id,
+                    `cat/sv_name`,
+                   cat_desc
+              FROM categories_services
+             WHERE `cat/sv_name` LIKE %s
+        """
+        # note the comma: makes it a single‐element tuple
+        cursor.execute(sql, (f"%{search_query}%",))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        category_list = []
+        for row in rows:
+            # adjust the constructor args to match your Category model
+            category_list.append(
+                CategoryService(
+                    catsv_id=row[0],
+                    cat_sv_name=row[1],
+                    cat_desc=row[2]
+                )
+            )
+        return category_list
+
+
 class CleanerAnalytics:
     """Logs views & short-lists and returns live counts."""
     def __init__(self):
@@ -489,22 +835,6 @@ class CleanerAnalytics:
         cnt = cur.fetchone()[0];  cur.close()
         return cnt
 
-    # -------- short-lists ----------
-    def toggle_shortlist(self, cleaner_id, homeowner_id):
-        cur = self.conn.cursor()
-        cur.execute("""SELECT 1 FROM shortlist
-                       WHERE cleaner_id=%s AND homeowner_id=%s""",
-                    (cleaner_id, homeowner_id))
-        if cur.fetchone():
-            cur.execute("""DELETE FROM shortlist
-                           WHERE cleaner_id=%s AND homeowner_id=%s""",
-                        (cleaner_id, homeowner_id))
-        else:
-            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id)
-                           VALUES (%s,%s)""",
-                        (cleaner_id, homeowner_id))
-        self.conn.commit();  cur.close()
-
     def shortlist_count(self, cleaner_id):
         cur = self.conn.cursor()
         cur.execute("SELECT COUNT(*) FROM shortlist WHERE cleaner_id=%s",
@@ -521,8 +851,98 @@ class CleanerAnalytics:
         cur.close()
         return bool(exists)
 
+class BookedServices:
+    def __init__(self):
+        self.db = db  # Assuming `db` is your database connection object
+    
+    def getBookedServices(self, user_id):
+        """
+        Fetch booked services for a specific user from the booked_services table.
+        """
+        cursor = self.db.cursor()
+        query = """
+            SELECT 
+                bs.cleaner_id,
+                bs.cleaner_name,
+                bs.category_id,
+                cs.`cat/sv_name` AS service_name,
+                bs.total_charged,
+                bs.booked_at
+            FROM 
+                booked_services bs
+            JOIN 
+                categories_services cs ON bs.catsv_id = cs.catsv_id
+            WHERE 
+                bs.user_id = %s
+            ORDER BY 
+                bs.booked_at DESC
+        """
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchall()
+        cursor.close()
 
+         # Format the result into a list of dictionaries
+        booked_services = []
+        for row in result:
+            booked_services.append({
+                "cleaner_id": row[0],
+                "cleaner_name": row[1],
+                "category_id": row[2],
+                "service_name": row[3],  # Fetch service name instead of service_id
+                "total_charged": row[4],
+                "booked_at": row[5]
+            })
 
+            return booked_services
+        
 
+# ------------------------------------------------------------------
+# Booking reports
+# ------------------------------------------------------------------
+class BookingReports:
+    def __init__(self):
+        self.conn = db                          # uses your existing connection
+
+    # ❶ bookings grouped by category
+    def by_category(self, date_from, date_to):
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT cs.`cat/sv_name` AS category,
+                   COUNT(*)          AS booked
+            FROM   booked_services  b
+                   JOIN categories_services cs
+                     ON b.category_id = cs.catsv_id
+            WHERE  DATE(b.booked_at) BETWEEN %s AND %s
+            GROUP  BY cs.`cat/sv_name`
+        """, (date_from, date_to))
+        rows = cur.fetchall()
+        cur.close()
+        
+        return {cat.strip(): cnt for cat, cnt in rows}
+
+    # number of distinct cleaners booked
+    def cleaners_booked(self, date_from, date_to):
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT COUNT(DISTINCT cleaner_id)
+            FROM   booked_services
+            WHERE  DATE(booked_at) BETWEEN %s AND %s
+        """, (date_from, date_to))
+        count = cur.fetchone()[0]
+        cur.close()
+        return count
+
+    def getBookingsByCleaner(self, start, end):
+        cur = db.cursor()
+        cur.execute("""
+            SELECT cleaner_name, COUNT(*)
+            FROM booked_services
+            WHERE booked_at BETWEEN %s AND %s
+            GROUP BY cleaner_name
+        """, (start, end))
+        rows = cur.fetchall(); cur.close()
+        return {name.strip(): cnt for name, cnt in rows}
+
+        
 
 # RANDOM STUFF FOR CI TESTING PLEASE IGNORE

@@ -1,7 +1,11 @@
 import controller
 import tkinter as tk
 from tkinter import *
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
+import datetime
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import calendar
 
 # Please use this dummy function as placeholder for the buttons if needed
 def dummy():
@@ -43,7 +47,7 @@ class LoginPage:
 
         if not user:
             messagebox.showerror("Login Failed", "Invalid credentials.")
-            return
+            pass  # Placeholder to avoid syntax errors
 
         if user.suspended:
             messagebox.showerror("Account Suspended",
@@ -145,7 +149,12 @@ class AdminPage:
             query = self.search_entry.get().strip()
             if query:
                 filtered_accounts = self.searchController.searchAccounts(query)
-                render_table(filtered_accounts)
+                if not filtered_accounts:
+                    messagebox.showerror("No Results", f"No accounts found for '{query}'.")
+                else:
+                    render_table(filtered_accounts)
+            else:
+                render_table(self.all_accounts)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewAccounts())).grid(row=0, column=3, padx=5)
@@ -162,10 +171,6 @@ class AdminPage:
             for widget in table_frame.winfo_children():
                 widget.destroy()
 
-            # Clear existing button_frame if it exists (to avoid duplicate buttons)
-            if hasattr(self, 'button_frame') and self.button_frame:
-                self.button_frame.destroy()
-
             headers = ["User ID", "Username", "Role","Status", "Actions"]
             header_font = ("Arial", 12, "bold")
             for col, header in enumerate(headers):
@@ -179,7 +184,7 @@ class AdminPage:
                 tk.Label(table_frame, text=getattr(account, 'role', account.role_id), font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
 
                 status = "Suspended" if account.suspended else "Active"
-                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row_count, column=3, sticky="nsew")
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=3, sticky="nsew")
 
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
@@ -194,18 +199,18 @@ class AdminPage:
 
                 row_count += 1  # Increment the row count after each account
 
-            # Action Buttons
-            self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
-            self.button_frame.grid(row=row_count, column=0, columnspan=5, pady=10)
-                
-            style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
-
-            # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
-            style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
-            style_btn("View Profiles", self.openManageProfiles, "#3f51b5").grid(row=0, column=1, padx=10)
-            style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)
-
         render_table(self.all_accounts)
+
+        # Action Buttons
+        self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.button_frame.grid(row=3, column=0, columnspan=5, pady=10)
+                
+        style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
+
+        # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
+        style_btn("View Profiles", self.openManageProfiles, "#3f51b5").grid(row=0, column=1, padx=10)
+        style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)  
 
     def suspendUserAccount(self, user_id, currently_suspended):
         self.suspendController = controller.SuspendAccountsController()
@@ -224,9 +229,13 @@ class AdminPage:
         inner = tk.Frame(border, bg="#add8e6")
         inner.pack(expand=True, fill="both", padx=20, pady=20)
 
-        # Message
-        tk.Label(inner, text="Are you sure you want to suspend this user?", font=("Arial", 12, "bold"), bg="#add8e6",wraplength=300,justify="center").pack(pady=(5, 20))
+        # Dynamically update the button text based on current suspension status
+        suspend_button_text = "Suspend" if not currently_suspended else "Reactivate"
 
+        # Message
+        tk.Label(inner, text=f"Are you sure you want to {suspend_button_text} this user?", font=("Arial", 12, "bold"), bg="#add8e6",wraplength=300,justify="center").pack(pady=(5, 20))
+
+        
         # Center the window on screen
         popup.update_idletasks()
         width = popup.winfo_width()
@@ -243,9 +252,6 @@ class AdminPage:
         cancel_btn = tk.Button(button_frame, text="Cancel", width=10, command=popup.destroy, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         cancel_btn.pack(side="left", padx=10)
 
-        # Dynamically update the button text based on current suspension status
-        suspend_button_text = "Suspend" if not currently_suspended else "Reactivate"
-        
         def handle_suspend():
             self.toggleSuspension(user_id, currently_suspended)
             popup.destroy()
@@ -256,16 +262,20 @@ class AdminPage:
 
     def toggleSuspension(self, user_id, currently_suspended):
         # Flip the flag
-        self.suspendController.setAccountSuspension(user_id, not bool(currently_suspended))
-        # Feedback
-        state = "suspended" if not currently_suspended else "reactivated"
-        messagebox.showinfo("Success", f"Account {user_id} {state}.")
-        # Refresh the table so status & button update
-        self.displayAccountsPage()
+        success = self.suspendController.setAccountSuspension(user_id, not bool(currently_suspended))
+
+        if success:
+            # Feedback
+            state = "suspended" if not currently_suspended else "reactivated"
+            messagebox.showinfo("Success", f"Account {user_id} {state}.")
+            # Refresh the table so status & button update
+            self.displayAccountsPage()
+        else:
+            messagebox.showerror("Error", f"Failed to update suspension status for account {user_id}.")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
-    def displayCreateAccountForm(self,):
+    def displayCreateAccountForm(self):
         self.createController = controller.CreateAccountsController()
         self.profileController = controller.ViewProfileController()
         for widget in self.root.winfo_children():
@@ -312,24 +322,30 @@ class AdminPage:
 
         # Submit button
         def submit():
-            name = name_entry.get()
-            username = username_entry.get()
-            password = password_entry.get()
-            confirm = confirm_password_entry.get()
-            email = email_entry.get()
+            name     = name_entry.get().strip()
+            username = username_entry.get().strip()
+            password = password_entry.get().strip()
+            confirm  = confirm_password_entry.get().strip()
+            email    = email_entry.get().strip()
             selected_role_name = self.selectedRole.get()
-            role_id = self.roleMap[selected_role_name]
+            role_id  = self.roleMap.get(selected_role_name)
+            
+            if not all([name, username, password, email, role_id]): 
+                messagebox.showerror("Error", "Please fill in all fields")
 
             if password != confirm:
                 messagebox.showerror("Error", "Passwords do not match.")
+                return 
+
+            success = self.createController.createAccount(
+                name, username, password, email, role_id
+            ) 
+
+            if not success:
+                messagebox.showerror("Database Error", "Please check backend." )
                 return
             
-            try:
-                self.createController.createAccount(name, username, password ,email, role_id)
-                # Controller: Return Data
-                messagebox.showinfo("Success", f"Account for {username} created successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"An error occurred: {e}")
+            messagebox.showinfo("Success", f"Account for {username} created successfully!")
 
         Button(self.root, text="Submit", command=submit).pack(pady=10)
         Button(self.root, text="Back", command=self.displayAccountsPage).pack(pady=5)
@@ -391,7 +407,7 @@ class AdminPage:
         submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitAccUpdate(account.user_id))
         submit_button.pack(pady=10)
 
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelAccUpdate)
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayAccountsPage)
         cancel_button.pack(pady=10)
 
     def submitAccUpdate(self, user_id):
@@ -404,26 +420,22 @@ class AdminPage:
         selected_role_name = self.selectedRole.get()
         new_role_id = self.roleMap[selected_role_name]
 
+        if not all([new_name, new_username, new_email, new_password, confirmpw, selected_role_name]):
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return
+        
         if new_password != confirmpw:
             messagebox.showerror("Error", "Passwords do not match.")
             return
+        
+        success = self.controller.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
 
-        # Validate the input
-        if not new_username or not new_password or not new_role_id:
-            messagebox.showerror("Error", "All fields must be filled out")
+        if not success:
+            messagebox.showerror("Error", "Failed to update account. Please try again.")
             return
-
-        try:
-            # Call the controller's update method with the correct parameters
-            self.controller.updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
-            messagebox.showinfo("Success", "Account updated successfully!")
-            self.displayAccountsPage()  # Refresh the accounts page after successful update
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {e}")
-
-    def cancelAccUpdate(self):
-        # Simply go back to the accounts page without making any changes
-        self.displayAccountsPage()
+     
+        messagebox.showinfo("Success", "Account updated.")
+        return
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # User Profile functions
@@ -433,7 +445,6 @@ class AdminPage:
 
     def displayProfilesPage(self):
         # Create ViewProfiles controller instance
-        self.controller = controller.ViewProfileController()
         self.searchController = controller.SearchProfilesController()
 
         # Set up the accounts display UI
@@ -464,26 +475,29 @@ class AdminPage:
             query = self.search_entry.get().strip()
             if query:
                 filtered_profiles = self.searchController.searchProfiles(query)
-                render_table(filtered_profiles)
+                if not filtered_profiles:
+                    messagebox.showerror("No Results", f"No profiles found for '{query}'.")
+                else:
+                    render_table(filtered_profiles)
 
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
-        tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewProfiles())).grid(row=0, column=3, padx=5)
+        tk.Button(search_frame, text="Reset", command=lambda: render_table()).grid(row=0, column=3, padx=5)
 
          # Table Frame
         table_frame = tk.Frame(self.root, bg="#add8e6")
         table_frame.grid(row=2, column=0, columnspan=4, padx=30, pady=10, sticky="nsew")
 
 
-        self.all_profiles = self.controller.viewProfiles()
+        def render_table(profiles=None):
+            self.controller = controller.ViewProfileController()
+            self.all_profiles = self.controller.viewProfiles()
+            if profiles is None:
+                profiles = self.controller.viewProfiles()
+            self.all_profiles = profiles
 
-        def render_table(profiles):
             # Clear previous widgets in table frame
             for widget in table_frame.winfo_children():
                 widget.destroy()
-
-            # Clear existing button_frame if it exists (to avoid duplicate buttons)
-            if hasattr(self, 'button_frame') and self.button_frame:
-                self.button_frame.destroy()
 
             headers = ["Role ID", "Role Name","Status", "Actions"]
             header_font = ("Arial", 12, "bold")
@@ -497,7 +511,7 @@ class AdminPage:
                 tk.Label(table_frame, text=profile.role, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=1, sticky="nsew")
 
                 status = "Suspended" if profile.suspended else "Active"
-                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row_count, column=2, sticky="nsew")
+                tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=2, sticky="nsew")
 
                 # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
@@ -507,26 +521,81 @@ class AdminPage:
                 edit_btn.pack(side="left", padx=10)
 
                 suspend_button_text = "Suspend" if not profile.suspended else "Reactivate"
-                suspend_btn = tk.Button(action_frame, text=suspend_button_text,  command=dummy, fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
+                suspend_btn = tk.Button(action_frame, text=suspend_button_text,  command=lambda prof=profile: self.suspendProfile(prof, not prof.suspended), fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
                 suspend_btn.pack(side="left", padx=10)
 
                 row_count += 1  # Increment the row count after each account
 
-            # Action Buttons
-            self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
-            self.button_frame.grid(row=row_count, column=0, columnspan=5, pady=10)
+        render_table()
+
+        # Action Buttons
+        self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.button_frame.grid(row=3, column=0, columnspan=5, pady=10)
                 
-            style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
+        style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
 
-            # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
-            style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
-            style_btn("View Accounts", self.openManageAccounts, "#3f51b5").grid(row=0, column=1, padx=10)
-            style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)
+        # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
+        style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
+        style_btn("View Accounts", self.openManageAccounts, "#3f51b5").grid(row=0, column=1, padx=10)
+        style_btn("Add Profile", self.displayAddProfileForm, "#009688").grid(row=0, column=2, padx=10)
 
+    def displayAddProfileForm(self):
+        self.addProfcontroller = controller.CreateProfileController()
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        render_table(self.all_profiles)
+        # Title for the update page
+        tk.Label(self.root, text="Add Profile", font=("Arial", 24)).pack(pady=20)
 
+        # Fields to update the username, password, and role
+        tk.Label(self.root, text="Role Name:").pack(pady=5)
+        self.roleEntry = tk.Entry(self.root, font=("Arial", 12))
+        self.roleEntry.pack(pady=5)
+
+        # Buttons to submit or cancel the update
+        submit_button = tk.Button(self.root, text="Add",  command=self.addProfile)
+        submit_button.pack(pady=10)
+
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayProfilesPage)
+        cancel_button.pack(pady=10)
+
+    def addProfile(self):
+        # Get the values entered in the fields
+        roleName = self.roleEntry.get()
+
+        if not roleName:
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return
         
+        success = self.addProfcontroller.createProfile(roleName)
+
+        if not success:
+            messagebox.showerror("Error", "Failed to add profile. Please try again.")
+            return
+    
+        messagebox.showinfo("Success", "Profile added")
+        self.displayProfilesPage()
+        return
+    
+    def suspendProfile(self, profile, activate: bool):
+        self.susController = controller.SuspendProfileController()
+        """
+        Pops up a Yes/No dialog to suspend or reactivate,
+        then calls the controller and refreshes the table.
+        """
+        verb = "suspend" if not profile.suspended else "reactivate"
+        msg = f"Are you sure you want to {verb} role #{profile.role_id} ({profile.role})?"
+        if not messagebox.askyesno("Please confirm", msg):
+            return
+
+        success = self.susController.setProfileSuspension(profile.role_id, activate)
+        if success:
+            messagebox.showinfo("Success", f"Role has been {verb}d.")
+        else:
+            messagebox.showerror("Error", f"Failed to {verb} role.")
+        # Refresh your listing
+        self.displayProfilesPage()
 
 
     def displayProfileUpdateForm(self, profile):
@@ -548,29 +617,24 @@ class AdminPage:
         submit_button = tk.Button(self.root, text="Update", command=lambda: self.submitProfUpdate(profile.role_id))
         submit_button.pack(pady=10)
 
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.cancelProfUpdate)
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.displayProfilesPage)
         cancel_button.pack(pady=10)
 
     def submitProfUpdate(self, role_id):
         # Get the values entered in the fields
         new_role = self.new_role_entry.get()
 
-        # Validate the input
         if not new_role:
-            messagebox.showerror("Error", "All fields must be filled out")
+            messagebox.showerror("Error", "All fields must be filled out.")
             return
+        
+        success = self.controller.updateProfile(role_id, new_role)
 
-        try:
-            # Call the controller's update method with the correct parameters
-            self.controller.updateProfile(role_id, new_role)
-            messagebox.showinfo("Success", "Profile updated successfully!")
-            self.displayProfilesPage()  # Refresh the accounts page after successful update
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {e}")
-
-    def cancelProfUpdate(self):
-        # Simply go back to the accounts page without making any changes
-        self.displayProfilesPage()
+        if not success:
+            messagebox.showerror("Error", "Failed to update profile. Please try again.")
+            return
+        
+        messagebox.showinfo("Success", "Profile updated")
 
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
@@ -599,9 +663,10 @@ class CleanerPage:
         Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
         # live metrics
-        counts = controller.CleanerAnalyticsController().getCounts(self.user.user_id)
-        tk.Label(self.root, text=f"Profile views: {counts['views']}").pack()
-        tk.Label(self.root, text=f"Times shortlisted: {counts['shortlists']}").pack(pady=(0,10))
+        profCounts = controller.CleanerProfViewsController().getViewCount(self.user.user_id)
+        shortlistCounts = controller.CleanerShortlistsViewsController().getShortlistCount(self.user.user_id)
+        tk.Label(self.root, text=f"Profile views:{profCounts}").pack()
+        tk.Label(self.root, text=f"Times shortlisted: {shortlistCounts}").pack(pady=(0,10))
 
         
         Button(self.root, text="View Services", command=self.displayMyServicesPage).pack(pady=5)
@@ -642,6 +707,9 @@ class CleanerPage:
             query = self.search_entry.get().strip()
             if query:
                 filtered = self.searchSeriveController.searchService(query, self.user.user_id)
+                if not filtered:
+                    messagebox.showerror("No Results", f"No services found for '{query}'.")
+                    return
                 render_table(filtered)
         
         # Fetch all services for this cleaner
@@ -902,8 +970,12 @@ class CleanerPage:
 
     def updateService(self, cleaner_id, service_id):
         self.updateServiceController = controller.UpdateServiceController()
-        new_price = self.priceEntry.get()
-        new_desc = self.descriptionEntry.get()
+        new_price = self.priceEntry.get().strip()
+        new_desc  = self.descriptionEntry.get().strip()
+
+        if not all([new_price, new_desc]):
+            messagebox.showerror("Error", "All fields must be filled out.")
+            return 
 
         try:
             new_price = float(new_price)
@@ -940,9 +1012,6 @@ class CleanerPage:
         except Exception as e:
             messagebox.showerror("Exception", f"An error occurred: {e}")
 
-
-
-    
     def viewJobHistory(self):
         # Create a controller instance to fetch job history
         self.jobHistoryController = controller.JobHistoryController()
@@ -1056,26 +1125,22 @@ class HomeOwnerPage:
         self.root = root
         self.user = user
         self.displayHomeOwnerPage()
-        self.analyticsCtl = controller.CleanerAnalyticsController()
+        self.profViewsCtl = controller.CleanerProfViewsController()
 
     def displayHomeOwnerPage(self):
-            for widget in self.root.winfo_children():
-                widget.destroy()
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-            Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
-            Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
-            Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
+        Label(self.root, text=f"Home Owner Dashboard", font=("Arial", 24)).pack(pady=30)
+        Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
+        Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
-            # Add Admin features here
-            Button(self.root, text="View Cleaners Available",
-                command=self.displayCleanersPage).pack(pady=5)
-            # Add Admin features here
-            Button(self.root, text="View Services Available",
-                command=self.displayAvailableService).pack(pady=5)
+        Button(self.root, text="View Services", command=self.displayAvailableServicePage).pack(pady=5)
+        Button(self.root, text="View Shortlist", command=self.displayShortlistPage).pack(pady=5)
+        Button(self.root, text="View Services Booked", command=self.viewBookedServices).pack(pady=5)
+        Button(self.root, text="Logout", command=self.logout).pack(pady=20)
 
-            Button(self.root, text="Logout", command=self.logout).pack(pady=20)
-
-    def displayAvailableService(self):
+    def displayAvailableServicePage(self):
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -1091,7 +1156,7 @@ class HomeOwnerPage:
         filter_frame.pack(pady=10)
 
         # Category Filter Dropdown
-        tk.Label(filter_frame, text="Search by Category:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        tk.Label(filter_frame, text="Search by Category or Services", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
         self.category_filter_var = tk.StringVar(value="All")
         category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
         category_filter_dropdown['values'] = [
@@ -1118,7 +1183,7 @@ class HomeOwnerPage:
         self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
         # Fetch and display all available services initially
-        self.displayServices()
+        self.displayAllServices()
 
         # Back to Dashboard Button
         tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
@@ -1130,60 +1195,99 @@ class HomeOwnerPage:
         # Fetch services based on selected category
         if selected_category != "All":
             # Apply filter for specific category
-            search_service_controller = controller.SearchAllAvailableServicesByCategoryController()
-            filtered_services = search_service_controller.fetchSearchServiceCategoryResult(selected_category)
+            search_service_controller = controller.SearchAllAvailableServicesController()
+            filtered_services = search_service_controller.searchAllServices(selected_category)
         else:
             # No filter, get all services
-            search_service_controller = controller.FetchAllAvailableServicesController()
-            filtered_services = search_service_controller.fetchAllAvailableService()
+            search_service_controller = controller.ViewAllAvailableServicesController()
+            filtered_services = search_service_controller.getAllAvailableService()
 
         # Display the fetched services
-        self.displayServices(filtered_services)
+        self.displayAllServices(filtered_services)
 
-    def displayServices(self, services=None):
+    def displayAllServices(self, services=None):
         if services is None:
             # If no filtered services, fetch all services
-            service_controller = controller.FetchAllAvailableServicesController()
-            services = service_controller.fetchAllAvailableService()
+            service_controller = controller.ViewAllAvailableServicesController()
+            services = service_controller.getAllAvailableService()
 
         # Clear existing table widgets
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
+         # Create canvas and scrollbar inside the table_frame
+        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame inside canvas for the scrollable content
+        scrollable_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Scroll region update
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        scrollable_frame.bind("<Configure>", on_frame_configure)
+
         # Table Headers
         headers = ["Cleaner ID", "Category", "Service Name", "Price", "Actions"]
         for col, header in enumerate(headers):
-            tk.Label(self.table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+            tk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
 
         # Table Rows
-        row = 1
-        for service in services:
+        for row, service in enumerate(services, start=1):
             # Cleaner ID
-            tk.Label(self.table_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
+            tk.Label(scrollable_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, sticky="nsew", pady=5)
 
             # Category
-            tk.Label(self.table_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
+            tk.Label(scrollable_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, sticky="nsew", pady=5)
 
             # Service Name
-            tk.Label(self.table_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
+            tk.Label(scrollable_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, sticky="nsew", pady=5)
 
             # Price
-            tk.Label(self.table_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, pady=5)
+            tk.Label(scrollable_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, sticky="nsew", pady=5)
 
             # Actions (Hire and View Profile buttons)
-            action = tk.Frame(self.table_frame, bg="#add8e6")
-            action.grid(row=row, column=4, pady=5)
+            action = tk.Frame(scrollable_frame, bg="#add8e6")
+            action.grid(row=row, column=4, sticky="nsew", padx=10, pady=5)
 
     
-            tk.Button(action, text="Shortlist", command=self.hire_cleaner, width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Shortlist",command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
+                self.shortlistService(cid, cat, sid), width=12).pack(side="left", padx=5)
             tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
 
             row += 1
     
-    def hire_cleaner(self):
-        messagebox.showinfo("Shortlist", f"You shortlisted cleaner!")
-  
-    def displayCleanerProfilePage(self, cleaner_id):
+    def shortlistService(self, cleaner_id, category_id, service_id):
+        shortListController = controller.AddShortlistController()
+        added = shortListController.addShortlist(cleaner_id, self.user.user_id,category_id, service_id)
+        print(f"Shortlist result from shortlist() method: {added}")  # Debugging output
+    
+        if added:
+            messagebox.showinfo("Shortlist", "Cleaner has been shortlisted!")
+        else:
+            messagebox.showinfo("Shortlist", "Cleaner is already shortlisted.")
+
+    def removeShortlist(self, cleaner_id, category_id, service_id):
+        self.removeShortlistController = controller.RemoveShortlistController()
+        removed = self.removeShortlistController.removeShortlist(cleaner_id, self.user.user_id,category_id, service_id)
+
+        if removed:
+            messagebox.showinfo("Shortlist", "Shortlist removed!")
+            self.displayShortlistPage()
+
+        else:
+            messagebox.showwarning("Shortlist", "No matching shortlist entry found or failed to remove!")
+
+        
+    def displayCleanerProfilePage(self,cleaner_id):
+        countsCtl = controller.CleanerAnalyticsController()
+        countsCtl.logView(cleaner_id, self.user.user_id)
         # Clear existing widgets
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -1244,70 +1348,221 @@ class HomeOwnerPage:
             tk.Label(table_frame, text=f"${price}", bg=bg_color, anchor="nw", justify="left").grid(row=row, column=3, sticky="nw", padx=5, pady=3)
 
         # Back Button
-        tk.Button(self.root, text="Back", command=self.displayAvailableService, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+        tk.Button(self.root, text="Back", command=self.displayAvailableServicePage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
 
-    def displayCleanersPage(self):
-        # wipe current widgets
-        for w in self.root.winfo_children():
-            w.destroy()
+    def displayShortlistPage(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        tk.Label(self.root,
-                text="Available Cleaners",
-                font=("Arial", 24)).pack(pady=20)
+        # Set default background color
+        self.root.configure(bg="#f0f2f5")  # Light background
 
-        table = tk.Frame(self.root, bg="#add8e6")
-        table.pack(padx=40, pady=10)
+        # Header
+        tk.Label(self.root, text="Shortlist", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
 
-        cleaners = controller.ViewAccountsController().viewAccounts()
+        # Filter Frame
+        filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
+        filter_frame.pack(pady=10)
 
-        headers = ["Cleaner", "Actions"]
-        for col, h in enumerate(headers):
-            tk.Label(table, text=h, font=("Arial", 12, "bold"),
-                    bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+        # Category Filter Dropdown
+        tk.Label(filter_frame, text="Search by Category or Services:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        self.category_filter_var = tk.StringVar(value="All")
+        category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
+        category_filter_dropdown['values'] = [
+                    "All",
+                    "Sofa Cleaning",
+                    "Mattress Cleaning",
+                    "Aircon Servicing",
+                    "Deep Cleaning",
+                    "Steam Cleaning",
+                    "Extraction",
+                    "Leather Cleaning",
+                    "Kitchen Deep Clean",
+                    "Bathroom Scrub Down",
+                    "Bedroom Deep Clean",
+                    "UV-C Cleaning"
+                ]
+        category_filter_dropdown.grid(row=0, column=1, padx=5)
 
-        row = 1
-        for c in cleaners:
-            if c.role_id != 2:   # only cleaners
-                continue
+        # Apply Filter Button
+        tk.Button(filter_frame, text="Search", command=self.applySearchShortlistByCategory, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=2, padx=10)
 
-            # name
-            tk.Label(table, text=c.username, bg="#add8e6", width=20)\
-            .grid(row=row, column=0, pady=5)
+        # Store table_frame in the object for reference
+         # Table Frame (for displaying categories)
+        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Table background
+        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
-            # fetch current shortlist status once per cleaner
-            countsCtl = controller.CleanerAnalyticsController()
-            is_shortlisted = countsCtl.model.shortlist_count_for_user(
-                                cleaner_id=c.user_id,
-                                homeowner_id=self.user.user_id)
+        # Fetch and display shortlist
+        self.displayShortlistServices()
 
-            btn_text = "Remove from shortlist" if is_shortlisted else "Shortlist"
+        # Back to Dashboard Button
+        tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
 
-            # frame to hold the two buttons
-            action = tk.Frame(table, bg="#add8e6")
-            action.grid(row=row, column=1, pady=5)
+    def applySearchShortlistByCategory(self):
+    # Get selected category from dropdown
+        selected_category = self.category_filter_var.get()
 
-            def open_profile(uid=c.user_id):
-                countsCtl.logView(uid, self.user.user_id)
-                # in a real app you'd show profile details here
-                messagebox.showinfo("Profile", f"Opened cleaner {uid}'s profile")
+        # Fetch shortlisted services based on selected category
+        if selected_category != "All":
+            # Apply filter for specific category for shortlisted services
+            search_service_controller = controller.SearchShortlistedServicesController()
+            filtered_services = search_service_controller.fetchShortlistedServiceCategoryResult(self.user.user_id, selected_category)
+            print(f"[DEBUG] Filtered services for '{selected_category}':", filtered_services)
+        else:
+            # No filter, get all shortlisted services
+            search_service_controller = controller.ViewShortlistedServicesController()
+            filtered_services = search_service_controller.getShortlistedServices(self.user.user_id)
 
-            tk.Button(action, text="Open profile",
-                    command=open_profile, width=16).pack(side="left", padx=5)
+        # Display the fetched shortlisted services
+        self.displayShortlistServices(filtered_services)
 
-            def toggle(uid=c.user_id):
-                countsCtl.toggleShortlist(uid, self.user.user_id)
-                # redraw the cleaners page so button text refreshes
-                self.displayCleanersPage()
+    def displayShortlistServices(self, services=None):
+        if services is None:
+          # If no filtered services, fetch all services
+            shortlistController = controller.ViewShortlistedServicesController()
+            shortlistedServices = shortlistController.getShortlistedServices(self.user.user_id)
+        else:
+            shortlistedServices = services
 
-            tk.Button(action, text=btn_text,
-                    command=toggle, width=18).pack(side="left", padx=5)
+        # Clear existing widgets inside table_frame only (this will reset the table each time it's updated)
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
 
-            row += 1
+        # Create canvas and scrollbar inside the table_frame
+        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-        # back nav
-        tk.Button(self.root, text="Back",
-                command=self.displayHomeOwnerPage).pack(pady=20)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
 
+        # Frame inside canvas for the scrollable content
+        scrollable_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Scroll region update
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        scrollable_frame.bind("<Configure>", on_frame_configure)
+
+        # Table Headers
+        headers = ["Cleaner ID", "Category", "Service Name", "Price", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, sticky="nsew", pady=5)
+
+        # Table Rows
+        for row, service in enumerate(shortlistedServices, start=1):
+            # Cleaner ID
+            tk.Label(scrollable_frame, text=service.cleaner_id, bg="#add8e6", width=20).grid(row=row, column=0, sticky="nsew", pady=5)
+
+            # Category
+            tk.Label(scrollable_frame, text=service.category_name, bg="#add8e6", width=20).grid(row=row, column=1, sticky="nsew", pady=5)
+
+            # Service Name
+            tk.Label(scrollable_frame, text=service.service_name, bg="#add8e6", width=20).grid(row=row, column=2, sticky="nsew", pady=5)
+
+            # Price
+            tk.Label(scrollable_frame, text=f"${service.price}", bg="#add8e6", width=20).grid(row=row, column=3, sticky="nsew", pady=5)
+
+            # Actions (Remove and View Profile buttons)
+            action = tk.Frame(scrollable_frame, bg="#add8e6")
+            action.grid(row=row, column=4, sticky="nsew", padx=10, pady=5)
+
+            tk.Button(action, text="Remove", command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
+                    self.removeShortlist(cid, cat, sid), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
+
+        
+
+    def viewBookedServices(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Header
+        tk.Label(self.root, text="Booked Services", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="black").pack(pady=20)
+
+        # Filter Frame
+        filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
+        filter_frame.pack(pady=10)
+
+        # Name Filter
+        tk.Label(filter_frame, text="Search by Name:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
+        name_filter_var = tk.StringVar()
+        name_filter_entry = tk.Entry(filter_frame, textvariable=name_filter_var, width=20)
+        name_filter_entry.grid(row=0, column=1, padx=5)
+
+        # Month Filter
+        tk.Label(filter_frame, text="Filter by Month:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=2, padx=5)
+        month_filter_var = tk.StringVar(value="All")
+        month_filter_dropdown = ttk.Combobox(filter_frame, textvariable=month_filter_var, state="readonly", width=15)
+        month_filter_dropdown['values'] = ["All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        month_filter_dropdown.grid(row=0, column=3, padx=5)
+
+        # Apply Filter Button
+        def apply_filters():
+            name_filter = name_filter_var.get().strip().lower()
+            selected_month = month_filter_var.get()
+
+            # Fetch booked services from the controller
+            booked_services_controller = controller.BookedServicesController()
+            booked_services = booked_services_controller.fetchBookedServices(self.user.user_id)
+
+            # Filter by name
+            name_filter = name_filter.strip().lower()
+            if name_filter:
+                booked_services = [
+                service for service in booked_services
+                if name_filter in service["service_name"].lower()
+             ]
+
+            # Filter by month
+            if selected_month != "All":
+                month_index = month_filter_dropdown['values'].index(selected_month)  # Get the month index
+                booked_services = [
+                    service for service in booked_services
+                    if service["booked_at"].month == month_index
+                ]
+
+            # Update the table with filtered results
+            render_table(booked_services)
+
+        tk.Button(filter_frame, text="Apply Filters", command=apply_filters, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=4, padx=10)
+
+        # Table Frame
+        table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Light blue table background
+        table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        # Function to render the table
+        def render_table(booked_services):
+            # Clear existing table widgets
+            for widget in table_frame.winfo_children():
+                widget.destroy()
+
+            # Table Headers
+            headers = ["Cleaner ID", "Cleaner Name", "Category ID", "Service Name", "Total Charged", "Booked At"]
+            for col, header in enumerate(headers):
+                tk.Label(table_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", fg="black", borderwidth=1, relief="solid").grid(row=0, column=col, sticky="nsew")
+
+            # Table Rows
+            for row_num, service in enumerate(booked_services, start=1):
+                tk.Label(table_frame, text=service["cleaner_id"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=0, sticky="nsew")
+                tk.Label(table_frame, text=service["cleaner_name"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=1, sticky="nsew")
+                tk.Label(table_frame, text=service["category_id"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=2, sticky="nsew")
+                tk.Label(table_frame, text=service["service_name"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=3, sticky="nsew")
+                tk.Label(table_frame, text=f"${service['total_charged']}", font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=4, sticky="nsew")
+                tk.Label(table_frame, text=service["booked_at"], font=("Arial", 12), bg="#ffffff", fg="black", borderwidth=1, relief="solid").grid(row=row_num, column=5, sticky="nsew")
+
+        # Fetch and display all booked services initially
+        booked_services_controller = controller.BookedServicesController()
+        booked_services = booked_services_controller.fetchBookedServices(self.user.user_id)
+        render_table(booked_services)
+
+        # Back to Dashboard Button
+        tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+        
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
 
@@ -1334,10 +1589,424 @@ class PlatformMngrPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Cleaning Categories", command=dummy).pack(pady=5)
-        Button(self.root, text="Generate Reports etc", command=dummy).pack(pady=5)
+        Button(self.root, text="View Cleaning Categories", command=self.viewCategoriesPage).pack(pady=5)
+        Button(self.root, text="View Reports", command=self.displayReportsPage).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
+    
+    def _parse_date(self, s: str, label: str) -> datetime.date | None:
+        """
+        Convert 'YYYY-MM-DD' string to date.
+        Shows an error and returns None on bad input.
+        """
+        try:
+            return datetime.date.fromisoformat(s.strip())
+        except ValueError:
+            messagebox.showerror("Date error",
+                f"Please enter {label} in YYYY-MM-DD format.")
+            return None
+
+    # --------------------------------------------------------------
+    #  Reports UI
+    # --------------------------------------------------------------
+    def displayReportsPage(self):
+
+        for w in self.root.winfo_children():
+            w.destroy()
+
+        tk.Label(self.root, text="Platform Reports",
+                font=("Arial", 24)).pack(pady=20)
+
+        # ───── period selector frame ──────────────────────────────────────
+        sel = tk.Frame(self.root); sel.pack(pady=10)
+        bg = "#2b2b2b"
+
+        # --- DAILY --------------------------------------------------------
+        row1 = tk.Frame(self.root, bg=bg); row1.pack(pady=4)
+        tk.Label(row1, text="Daily", bg=bg, fg="white").pack(side="left", padx=8)
+
+        self.day_var  = tk.StringVar(value=str(datetime.date.today()))
+        tk.Entry(row1, textvariable=self.day_var, width=10).pack(side="left")
+
+        tk.Button(row1, text="Show",
+                command=lambda: (
+                    (d := self._parse_date(self.day_var.get(), "a date"))
+                    and self.showReport("daily", d, d)
+                )).pack(side="left", padx=6)
+
+        # --- WEEKLY -------------------------------------------------------
+        row2 = tk.Frame(self.root, bg=bg); row2.pack(pady=4)
+        tk.Label(row2, text="Week containing", bg=bg, fg="white")\
+        .pack(side="left", padx=8)
+
+        self.week_var = tk.StringVar(value=str(datetime.date.today()))
+        tk.Entry(row2, textvariable=self.week_var, width=10).pack(side="left")
+
+        tk.Button(row2, text="Show",
+                command=self._handle_week).pack(side="left", padx=6)
+
+        # --- MONTHLY ------------------------------------------------------
+        row3 = tk.Frame(self.root, bg=bg); row3.pack(pady=4)
+        tk.Label(row3, text="Month (YYYY-MM)", bg=bg, fg="white")\
+        .pack(side="left", padx=8)
+
+        self.month_var = tk.StringVar(value=datetime.date.today().strftime("%Y-%m"))
+        tk.Entry(row3, textvariable=self.month_var, width=7).pack(side="left")
+
+        tk.Button(row3, text="Show",
+                command=self._handle_month).pack(side="left", padx=6)
+
+        # headline result
+        self.result = tk.Label(self.root, font=("Consolas", 14), justify="left")
+        self.result.pack(pady=10)
+
+        tk.Button(self.root, text="Back",
+                command=self.PlatformMngrPage).pack(pady=10)
+
+    def _handle_week(self):
+        any_day = self._parse_date(self.week_var.get(), "a date")
+        if not any_day:
+            return
+        start = any_day - datetime.timedelta(days=any_day.weekday())  # Monday
+        end   = start + datetime.timedelta(days=6)                    # Sunday
+        self.showReport("weekly", start, end)
+
+    def _handle_month(self):
+        try:
+            first = datetime.datetime.strptime(self.month_var.get().strip(),
+                                            "%Y-%m").date().replace(day=1)
+        except ValueError:
+            messagebox.showerror("Date error",
+                                "Enter month as YYYY-MM, e.g. 2025-05")
+            return
+        days = calendar.monthrange(first.year, first.month)[1]
+        last = first.replace(day=days)
+        self.showReport("monthly", first, last)
+
+    def _render_report(self, period: str, frm: datetime.date, to: datetime.date):
+
+        if period == "daily":
+            rep = controller.DailyReportController()
+        elif period == "weekly":
+            rep = controller.WeeklyReportController()
+        else:                     # monthly
+            rep = controller.MonthlyReportController()
+
+        cat_data     = rep.category_report(frm, to)
+        cleaners     = rep.distinct_cleaners(frm, to)
+        cleaner_data = rep.cleaner_report(frm, to)
+
+        self.result.config(text=f"Unique cleaners booked: {cleaners}")
+
+        if not cat_data:
+            messagebox.showinfo("No data")
+            return
+
+        pretty = {"daily":   "Daily",
+                "weekly":  "Weekly",
+                "monthly": "Monthly"}[period]
+        
+        range_txt = f"{frm:%d %b %Y} – {to:%d %b %Y}"
+
+        # bookings by category chart
+        fig1, ax1 = plt.subplots(figsize=(6, 3.5))
+        bars = ax1.bar(cat_data.keys(), cat_data.values(), width=0.55)
+        ax1.set_title(f"{pretty} bookings ({range_txt})")
+        ax1.set_ylabel("Bookings")
+        ax1.set_xticks(range(len(cat_data)))
+        ax1.set_xticklabels(cat_data.keys(), rotation=25, ha="right")
+        fig1.tight_layout()
+
+        # bookings by cleaner chart
+        fig2, ax2 = plt.subplots(figsize=(6, 2.8))
+        ax2.bar(cleaner_data.keys(), cleaner_data.values(),
+                width=0.55, color="#4c72b0")
+        ax2.set_title(f"{pretty} cleaners booked ({range_txt})")
+        ax2.set_ylabel("Count")
+        ax2.set_xticks(range(len(cleaner_data)))
+        ax2.set_xticklabels(cleaner_data.keys(), rotation=25, ha="right")
+        for side in ("top", "right"):
+            ax2.spines[side].set_visible(False)
+        fig2.tight_layout()
+
+        if hasattr(self, "chart_frame"):
+            self.chart_frame.destroy()           # clear old charts if they exist
+        self.chart_frame = tk.Frame(self.root, bg="#ffffff", relief="sunken")
+        self.chart_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        for f in (fig1, fig2):                   # embed both charts
+            cvs = FigureCanvasTkAgg(f, master=self.chart_frame)
+            cvs.draw()
+            cvs.get_tk_widget().pack(
+                side="top", fill="both", expand=True, pady=6)
+            
+    def showReport(self, period: str,
+                   frm: datetime.date, to: datetime.date):
+        self.root.after_idle(
+            lambda: self._render_report(period, frm, to))
+
+    def viewCategoriesPage(self):
+    # Clear the current page, but leave the search bar and buttons intact
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.viewCategories = controller.FetchCategoriesController()
+
+        # Set default background color
+        self.root.configure(bg="#f0f2f5")  # Light background
+
+        Label(self.root, text="Cleaning Categories", font=("Arial", 20)).pack(pady=20)
+
+        # Create a frame to hold search bar and button
+        search_frame = tk.Frame(self.root, bg="#f0f2f5")
+        search_frame.pack(pady=20)
+
+        # Create a search bar inside the frame
+        self.searchEntry = StringVar()  # StringVar to hold the search query
+        search_bar = Entry(search_frame, textvariable=self.searchEntry, font=("Arial", 14), width=30)
+        search_bar.pack(side="left", padx=5)
+
+        # Create a search button to the right of the search bar
+        search_button = Button(search_frame, text="Search", command=self.searchCategories, font=("Arial", 12))
+        search_button.pack(side="left", padx=5)
+
+        # Add Category button (new button to add category)
+        add_category_button = Button(self.root, text="Add Category", command=lambda: self.openAddCategoryForm(), font=("Arial", 12))
+        add_category_button.pack(pady=10)
+
+        addServiceButton = Button(self.root, text="Add Service", command=lambda: self.openAddServiceForm(), font=("Arial", 12))
+        addServiceButton.pack(pady=10)
+
+        # Store table_frame in the object for reference
+         # Table Frame (for displaying categories)
+        self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Table background
+        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+
+        self.displayCategories()
+
+        Button(self.root, text="Back", command=self.PlatformMngrPage).pack(pady=20)
+
+    def searchCategories(self):
+        self.searchAllCategories = controller.SearchCategoryController()
+
+        search_query = self.searchEntry.get().strip()
+        if search_query:
+            # call the controller’s method you just wrote
+            categories = self.searchAllCategories.searchCategories(search_query)
+        else:
+            # if the box is empty, fall back to showing all
+            categories = self.viewCategories.fetchCategories()
+        # refresh the table with whatever list we got back
+        self.displayCategories(categories)
+
+    def displayCategories(self, categories=None):
+        if categories is None:
+            categories = self.viewCategories.fetchCategories()
+
+        # Clear existing widgets in table_frame only
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+        # Create canvas and scrollbar
+        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame inside canvas
+        scrollable_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Scroll region update
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        scrollable_frame.bind("<Configure>", on_frame_configure)
+
+
+        # Table Headers
+        headers = ["Category ID", "Category Name", "Description", "Actions"]
+        for col, header in enumerate(headers):
+            tk.Label(scrollable_frame, text=header, font=("Arial", 12, "bold"), bg="#e6e6e6", width=20).grid(row=0, column=col, pady=5)
+
+    
+        # Rows
+        for row, category in enumerate(categories, start=1):
+            # Category ID
+            tk.Label(scrollable_frame, text=category.catsv_id, bg="#add8e6", width=20).grid(row=row, column=0, pady=5)
+
+            # Category Name
+            tk.Label(scrollable_frame, text=category.cat_sv_name, bg="#add8e6", width=20).grid(row=row, column=1, pady=5)
+
+            # Category Description
+            tk.Label(scrollable_frame, text=category.cat_desc, bg="#add8e6", width=20).grid(row=row, column=2, pady=5)
+
+            # Actions (View, Update, and Delete buttons)
+            action = tk.Frame(scrollable_frame, bg="#add8e6")
+            action.grid(row=row, column=3, pady=5)
+
+            tk.Button(action, text="View Services", command=lambda c=category: dummy(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Update", command=lambda c=category: self.openUpdateCategoryForm(c), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Delete", command=lambda c=category: self.deleteCategory(c), width=12).pack(side="left", padx=5)
+
+    
+    def openAddCategoryForm(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Display form title
+        tk.Label(self.root, text="Add Category", font=("Arial", 18)).pack(pady=20)
+
+        # Price input
+        tk.Label(self.root, text="Category Name:").pack(pady=5)
+        self.nameEntry = tk.Entry(self.root)
+        self.nameEntry.pack(pady=5)
+
+        # Description input
+        tk.Label(self.root, text="Description:").pack(pady=5)
+        self.descriptionEntry = tk.Entry(self.root)
+        self.descriptionEntry.pack(pady=5)
+
+        # Submit button
+        tk.Button(self.root, text="Add Category", command=self.addCategory).pack(pady=20)
+
+        tk.Button(self.root, text="Back", command=self.viewCategoriesPage).pack(pady=20)
+
+    def addCategory(self):
+        self.addCategoryController = controller.AddCategoryController()
+        catName = self.nameEntry.get().strip()
+        catDesc = self.descriptionEntry.get().strip()
+
+        if not catName:
+            messagebox.showwarning("Input Error", "Category name is required.")
+            return
+
+        success = self.addCategoryController.addCategory(catName, catDesc)
+
+        if success:
+            messagebox.showinfo("Success", f"Category '{catName}' added successfully.")
+            self.viewCategoriesPage()
+        else:
+            messagebox.showerror("Error", "Failed to add category. Check the database or try again.")
+
+    def openAddServiceForm(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Display form title
+        tk.Label(self.root, text="Add Services", font=("Arial", 18)).pack(pady=20)
+
+        # Fetch existing categories
+        fetchController= controller.FetchCategoriesController()
+        self.categories = fetchController.fetchCategories() 
+
+         # Check if categories are found, otherwise show an error message
+        if not self.categories:
+            tk.Label(self.root, text="No categories available. Please add categories first.", font=("Arial", 12), fg="red").pack(pady=10)
+            return  # Exit the function if no categories are found
+
+        # Category dropdown (combobox)
+        category_names = [cat.cat_sv_name for cat in self.categories]  # Assuming the second item in tuple is the category name
+        tk.Label(self.root, text="Select Category:", font=("Arial", 12)).pack(pady=10)
+    
+        # Create a combobox for category selection
+        self.category_combobox = ttk.Combobox(self.root, values=category_names, width=30)
+        self.category_combobox.pack(pady=10)
+
+        # Service Name input
+        tk.Label(self.root, text="Service Name:", font=("Arial", 12)).pack(pady=10)
+        self.servNameEntry = tk.Entry(self.root, width=30)
+        self.servNameEntry.pack(pady=10)
+
+        # Add Service Button
+        add_service_button = tk.Button(self.root, text="Add Service", font=("Arial", 12), command=self.addNewService)
+        add_service_button.pack(pady=20)
+
+    def addNewService(self): # OUT OF SCOPE
+        cat_sv_name = self.servNameEntry.get()  
+        selected_category_name  = self.category_combobox.get()
+        print("Selected:", selected_category_name) 
+
+        for cat in self.categories:
+            print("Comparing to:", cat.cat_sv_name)
+            if cat.cat_sv_name.strip() == selected_category_name.strip():
+                parentCat_id = cat.catsv_id
+                break
+
+        # Call the controller's add function
+        self.addPlatServiceController = controller.AddPlatformServiceController()
+
+        parentCat_id = None
+        for cat in self.categories:
+            print("Comparing to:", cat.cat_sv_name)
+            if cat.cat_sv_name.strip() == selected_category_name.strip():
+                parentCat_id = cat.catsv_id
+                break
+
+        if parentCat_id is None:
+            print("Error: Selected category not found.")
+        else:
+            cat_sv_name = self.servNameEntry.get()
+            # Now use the correct ID
+            success = self.addPlatServiceController.addService(cat_sv_name, parentCat_id)
+        
+        if success:
+            print("Service successfully added!")
+        else:
+            print("Failed to add service.")
+        
+    def deleteCategory(self, category):
+        self.deleteCat = controller.DeleteCategoryController()
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete category '{category.cat_sv_name}'?")
+        if confirm:
+            success = self.deleteCat.deleteCategory(category.catsv_id)
+            if success:
+                messagebox.showinfo("Success", f"Category '{category.cat_sv_name}' has been deleted.")
+                self.displayCategories()  # Refresh the table
+            else:
+                messagebox.showerror("Error", "Failed to delete the category.")
+
+    def openUpdateCategoryForm(self, category):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Display form title
+        tk.Label(self.root, text="Update Category Description", font=("Arial", 18)).pack(pady=20)
+
+        # Category Description
+        tk.Label(self.root, text="Category Description:", font=("Arial", 12)).pack(pady=10)
+        self.descEntry = tk.Entry(self.root, width=30)
+        desc_text = str(category.cat_desc) if category.cat_desc is not None else ""
+        self.descEntry.insert(tk.END, desc_text)  # Set default value
+        self.descEntry.pack(pady=10)
+
+        # Update Button
+        updateCategoryButton = tk.Button(
+            self.root,
+            text="Update Category",
+            font=("Arial", 12),
+            command=lambda c=category: self.updateCategory(c)
+        )
+        updateCategoryButton.pack(pady=20)
+
+    def updateCategory(self, category):
+        self.updateCatDesc = controller.UpdateCategoryController()
+        newCatDesc = self.descEntry.get()
+
+        # Update the category
+        success = self.updateCatDesc.updateCategoryDesc(category.catsv_id,newCatDesc)
+        if success:
+            messagebox.showinfo(
+                "Success",
+                f"Category '{category.cat_sv_name}' has been updated."
+            )
+            self.viewCategoriesPage()  # Refresh the table
+        else:
+            messagebox.showerror("Error", "Failed to update the category.")
+      
+
 
     def dummy(self):
         messagebox.showinfo("Clicked", "Feature coming soon.")
