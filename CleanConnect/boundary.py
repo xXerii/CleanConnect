@@ -151,7 +151,7 @@ class AdminPage:
                 filtered_accounts = self.searchController.searchAccounts(query)
                 if not filtered_accounts:
                     messagebox.showerror("No Results", f"No accounts found for '{query}'.")
-                else
+                else:
                     render_table(filtered_accounts)
             else:
                 render_table(self.all_accounts)
