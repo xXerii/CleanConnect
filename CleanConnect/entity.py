@@ -447,9 +447,6 @@ class CleanerService:
 
         return services
     
-    
-
-
 class CategoryService:
     def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None):
         self.catsv_id = catsv_id
