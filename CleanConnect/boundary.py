@@ -250,9 +250,6 @@ class AdminPage:
         cancel_btn = tk.Button(button_frame, text="Cancel", width=10, command=popup.destroy, highlightbackground="#add8e6", activebackground="#8fc5d8", relief="flat")
         cancel_btn.pack(side="left", padx=10)
 
-       
-
-        
         def handle_suspend():
             self.toggleSuspension(user_id, currently_suspended)
             popup.destroy()
@@ -276,7 +273,7 @@ class AdminPage:
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
-    def displayCreateAccountForm(self,):
+    def displayCreateAccountForm(self):
         self.createController = controller.CreateAccountsController()
         self.profileController = controller.ViewProfileController()
         for widget in self.root.winfo_children():
@@ -664,9 +661,10 @@ class CleanerPage:
         Label(self.root, text=f"Welcome, {self.user.username}").pack(pady=10)
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
         # live metrics
-        counts = controller.CleanerAnalyticsController().getCounts(self.user.user_id)
-        tk.Label(self.root, text=f"Profile views: {counts['views']}").pack()
-        tk.Label(self.root, text=f"Times shortlisted: {counts['shortlists']}").pack(pady=(0,10))
+        profCounts = controller.CleanerProfViewsController().getViewCount(self.user.user_id)
+        shortlistCounts = controller.CleanerShortlistsViewsController().getShortlistCount(self.user.user_id)
+        tk.Label(self.root, text=f"Profile views:{profCounts}").pack()
+        tk.Label(self.root, text=f"Times shortlisted: {shortlistCounts}").pack(pady=(0,10))
 
         
         Button(self.root, text="View Services", command=self.displayMyServicesPage).pack(pady=5)
@@ -1106,7 +1104,7 @@ class HomeOwnerPage:
         self.root = root
         self.user = user
         self.displayHomeOwnerPage()
-        self.analyticsCtl = controller.CleanerAnalyticsController()
+        self.profViewsCtl = controller.CleanerProfViewsController()
 
     def displayHomeOwnerPage(self):
         for widget in self.root.winfo_children():

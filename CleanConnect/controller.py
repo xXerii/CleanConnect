@@ -37,13 +37,6 @@ class CreateAccountsController:
         # Create a new user account
         return self.userAccount.createAccount(name, username, password ,email, role_id)
 
-class SuspendAccountsController:
-    def __init__(self):
-        self.userAccount = entity.UserAccount()
-    
-    def setAccountSuspension(self, id: int, suspended: bool):
-        return self.userAccount.setSuspended(id, suspended)
-    
     
 class ViewProfileController:
     def __init__(self):
@@ -171,19 +164,22 @@ class JobHistoryController:
         """
         return self.cleaner_service.getJobHistoryByCleaner(cleaner_id)
 
-class CleanerAnalyticsController:
+class CleanerProfViewsController:
     def __init__(self):
         self.model = entity.CleanerAnalytics()
 
-    # façade methods used by the UI
     def logView(self, cleaner_id, viewer_id):
         self.model.log_view(cleaner_id, viewer_id)
 
-    def getCounts(self, cleaner_id):
-        return {
-            "views":      self.model.view_count(cleaner_id),
-            "shortlists": self.model.shortlist_count(cleaner_id),
-        }
+    def getViewCount(self, cleaner_id):
+        return self.model.view_count(cleaner_id)
+
+class CleanerShortlistsViewsController:
+    def __init__(self):
+        self.model = entity.CleanerAnalytics()
+
+    def getShortlistCount(self, cleaner_id):
+        return self.model.shortlist_count(cleaner_id)
 
 class AddShortlistController:
     def __init__(self):
@@ -234,7 +230,7 @@ class SearchCategoryController:
     def searchCategories(self, search_query):
         return self.categoryService.searchCategories(search_query)
     
-# User Admins Controllers'
+# User Admins Controllers
 class CreateProfileController:
     def __init__(self):
         self.userProfile = entity.UserProfile()
@@ -242,6 +238,13 @@ class CreateProfileController:
     def createProfile(self, role):
         # Create a new user account
         return self.userProfile.createProfile(role)
+    
+class SuspendAccountsController:
+    def __init__(self):
+        self.userAccount = entity.UserAccount()
+    
+    def setAccountSuspension(self, id: int, suspended: bool):
+        return self.userAccount.setAccountSuspension(id, suspended)
 
 class SuspendProfileController:
     def __init__(self):

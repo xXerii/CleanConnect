@@ -119,7 +119,7 @@ class UserAccount:
         uid, name, username, email, pw, role, suspended = row
         return UserAccount(uid, name, username, email, pw, role, suspended)
         
-    def setSuspended(self, user_id: int, suspended: bool):
+    def setAccountSuspension(self, user_id: int, suspended: bool):
         try:
             cursor = db.cursor()
             cursor.execute(
