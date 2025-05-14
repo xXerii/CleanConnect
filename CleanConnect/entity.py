@@ -600,29 +600,41 @@ class CleanerService:
     
      # -------- short-lists ----------
     def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
-        cur = db.cursor()
+        try:
+            cur = db.cursor()
 
-        # Check if the cleaner is already shortlisted
-        cur.execute("""SELECT 1 FROM shortlist
-                   WHERE cleaner_id=%s AND homeowner_id=%s AND category_id=%s AND service_id=%s""",
-                (cleaner_id, homeowner_id, category_id, service_id))
-    
-        result = cur.fetchone()
-        print(f"Shortlist check result for cleaner_id {cleaner_id}: {result}")  # Debugging output
-    
-        already_shortlisted = result is not None
-        print(f"Cleaner {cleaner_id} already shortlisted: {already_shortlisted}")  # Debugging output
-    
-        if not already_shortlisted:
-        # Insert the cleaner into the shortlist if not already shortlisted
-            cur.execute("""INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
-                       VALUES (%s, %s, %s, %s)""",
-                    (cleaner_id, homeowner_id, category_id, service_id))
+            # Check for existing entry
+            cur.execute(
+                """
+                SELECT 1
+                  FROM shortlist
+                 WHERE cleaner_id = %s
+                   AND homeowner_id = %s
+                   AND category_id = %s
+                   AND service_id = %s
+                """,
+                (cleaner_id, homeowner_id, category_id, service_id)
+            )
+            if cur.fetchone() is not None:
+                return False
+
+            cur.execute(
+                """
+                INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (cleaner_id, homeowner_id, category_id, service_id)
+            )
             db.commit()
-            print("Record inserted!")  # Debug line
-    
-        cur.close()
-        return not already_shortlisted # Basically returns True if cleaner is added into the shortlist
+            return True
+
+        except Exception as e:
+            print(f"Error in addShortlist: {e}")
+            db.rollback()
+            return False
+
+        finally:
+            cur.close()
     
     def removeShortlist(self, cleaner_id, homeowner_id,category_id, service_id):
         cursor = db.cursor()
@@ -731,15 +743,11 @@ class CategoryService:
             return True
         
         except Exception as e:
-            # Rollback in case of any error
             db.rollback()
-
-            # Optionally log the error or print it
             print(f"Error adding new service: {e}")
             return False
 
         finally:
-        # Close the cursor to avoid potential memory leaks
             cursor.close()
         
     def deleteCategory(self, catsv_id): # ON DELETE CASCADE
@@ -763,23 +771,7 @@ class CategoryService:
                 (new_desc, catsv_id)
             )
             db.commit()
-            return cursor.rowcount > 0
-        except Exception as e:
-            db.rollback()
-            print(f"Error updating description: {e}")
-            return False
-        finally:
-            cursor.close()
-    
-    def updateCategoryDesc(self, catsv_id, new_desc):
-        cursor = db.cursor()
-        try:
-            cursor.execute(
-                "UPDATE categories_services SET cat_desc = %s WHERE catsv_id = %s",
-                (new_desc, catsv_id)
-            )
-            db.commit()
-            return cursor.rowcount > 0
+            return True
         except Exception as e:
             db.rollback()
             print(f"Error updating description: {e}")
