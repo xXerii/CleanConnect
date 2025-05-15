@@ -15,8 +15,109 @@ if db.is_connected():
 else:
     print("Connection failed")
 
+class UserProfile:
+    def __init__(self, role_id=None, role=None, suspended=None):
+        self.role_id = role_id
+        self.role = role
+        self.suspended = suspended
+
+    def viewProfiles(self):
+        cursor = db.cursor()
+        query = "SELECT * FROM userprofile"
+        cursor.execute(query)
+        profiles = cursor.fetchall()
+        cursor.close()
+
+        profile_list = []
+        for profile in profiles:
+            profile = UserProfile(profile[0], profile[1], profile[2])
+            profile_list.append(profile)
+
+        return profile_list
+        
+    def searchProfiles(self, search_query):
+        cursor = db.cursor()
+        query = "SELECT * FROM userprofile WHERE role LIKE %s" 
+        cursor.execute(query, (f"%{search_query}%",)) # Comma after the formatted string to make it a single-element tuple, wont work without
+        profiles = cursor.fetchall()
+        cursor.close()
+
+        profile_list = []
+        for profile in profiles:
+            profile_list.append(UserProfile(profile[0], profile[1], profile[2]))
+        return profile_list
+    
+    def updateProfile(self, role_id, new_role):
+        # Perform the database update logic for the provided user ID
+        cursor = db.cursor()
+        query = "UPDATE userprofile SET role =%s WHERE role_id = %s "
+        try:
+            cursor.execute(query, (new_role, role_id))
+            db.commit()
+            print("Profile updated successfully # DEBUG TRUE")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False
+          
+        finally:
+            cursor.close()
+
+    def createProfile(self, role):
+        cursor = db.cursor()
+        query = """
+            INSERT INTO userprofile (
+                role
+            ) VALUES (%s)
+        """
+        try:
+            cursor.execute(query, (role,))
+            db.commit()
+            print("Profile created successfully # DEBUG TRUE")
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err} # DEBUG FALSE")
+            db.rollback()
+            return False
+        
+        finally:
+            cursor.close()
+    
+    def setProfileSuspension(self, role_id: int, suspended: bool):
+        try:
+            cursor = db.cursor(buffered=True)
+
+            sql1 = """
+                UPDATE userprofile
+                   SET suspended= %s
+                 WHERE role_id = %s
+            """
+            cursor.execute(sql1, (suspended, role_id))
+
+            sql2 = """
+                UPDATE useraccounts
+                SET suspended = %s
+                WHERE role_id = %s
+                """
+            cursor.execute(sql2, (suspended, role_id))
+
+            db.commit()
+            return True
+
+        except Exception as e:
+            print("Error toggling profile:", e)
+            db.rollback()
+            return False
+
+        finally:
+            cursor.close()
+
 class UserAccount:
-    def __init__(self, user_id=None, name=None, username=None, email=None, password=None, role_id=None, suspended=None):
+    profile: UserProfile
+    
+    def __init__(self, user_id=None, name=None, username=None, email=None, password=None, role_id=None, suspended=None, profile: UserProfile =None):
+        self.profile = profile
         self.user_id = user_id
         self.name = name
         self.username = username
@@ -134,105 +235,6 @@ class UserAccount:
             return False
         finally:
             cursor.close()
-
-class UserProfile:
-    def __init__(self, role_id=None, role=None, suspended=None):
-        self.role_id = role_id
-        self.role = role
-        self.suspended = suspended
-
-    def viewProfiles(self):
-        cursor = db.cursor()
-        query = "SELECT * FROM userprofile"
-        cursor.execute(query)
-        profiles = cursor.fetchall()
-        cursor.close()
-
-        profile_list = []
-        for profile in profiles:
-            profile = UserProfile(profile[0], profile[1], profile[2])
-            profile_list.append(profile)
-
-        return profile_list
-        
-    def searchProfiles(self, search_query):
-        cursor = db.cursor()
-        query = "SELECT * FROM userprofile WHERE role LIKE %s" 
-        cursor.execute(query, (f"%{search_query}%",)) # Comma after the formatted string to make it a single-element tuple, wont work without
-        profiles = cursor.fetchall()
-        cursor.close()
-
-        profile_list = []
-        for profile in profiles:
-            profile_list.append(UserProfile(profile[0], profile[1], profile[2]))
-        return profile_list
-    
-    def updateProfile(self, role_id, new_role):
-        # Perform the database update logic for the provided user ID
-        cursor = db.cursor()
-        query = "UPDATE userprofile SET role =%s WHERE role_id = %s "
-        try:
-            cursor.execute(query, (new_role, role_id))
-            db.commit()
-            print("Profile updated successfully # DEBUG TRUE")
-            return True
-        except mysql.connector.Error as err:
-            print(f"Error: {err} # DEBUG FALSE")
-            db.rollback()
-            return False
-          
-        finally:
-            cursor.close()
-
-    def createProfile(self, role):
-        cursor = db.cursor()
-        query = """
-            INSERT INTO userprofile (
-                role
-            ) VALUES (%s)
-        """
-        try:
-            cursor.execute(query, (role,))
-            db.commit()
-            print("Profile created successfully # DEBUG TRUE")
-            return True
-        except mysql.connector.Error as err:
-            print(f"Error: {err} # DEBUG FALSE")
-            db.rollback()
-            return False
-        
-        finally:
-            cursor.close()
-    
-    def setProfileSuspension(self, role_id: int, suspended: bool):
-        try:
-            cursor = db.cursor(buffered=True)
-
-            sql1 = """
-                UPDATE userprofile
-                   SET suspended= %s
-                 WHERE role_id = %s
-            """
-            cursor.execute(sql1, (suspended, role_id))
-
-            sql2 = """
-                UPDATE useraccounts
-                SET suspended = %s
-                WHERE role_id = %s
-                """
-            cursor.execute(sql2, (suspended, role_id))
-
-            db.commit()
-            return True
-
-        except Exception as e:
-            print("Error toggling profile:", e)
-            db.rollback()
-            return False
-
-        finally:
-            cursor.close()
-        
 
 class CleanerService:
     def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None, service_name=None, category_name=None):
