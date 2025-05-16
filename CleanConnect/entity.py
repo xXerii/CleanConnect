@@ -386,11 +386,13 @@ class CleanerService:
         cursor = db.cursor()
         query = """
             SELECT 
-            jh.cleaner_id, jh.booked_by, c.`cat/sv_name` AS service_provided, jh.total_charged,
+            jh.cleaner_id, u.name as booked_by, c.`cat/sv_name` AS service_provided, jh.total_charged,
             jh.booked_at
             FROM job_history jh
             JOIN categories_services c 
             ON jh.service_id = c.catsv_id
+            JOIN useraccounts u
+            ON jh.booked_by = u.user_id
             WHERE jh.cleaner_id = %s
             ORDER BY 
             STR_TO_DATE(jh.booked_at, '%d/%m/%y') ASC
@@ -411,6 +413,40 @@ class CleanerService:
             })
 
         return job_history
+    
+    def getPastBookingsByHomeOwner(self, homeowner_id):
+        cursor = db.cursor()
+        query = """
+            SELECT 
+                jh.cleaner_id,
+                u.name AS cleaner_name,
+                cat.`cat/sv_name` AS category_name,
+                cs.`cat/sv_name` AS service_name,
+                jh.total_charged,
+                jh.booked_at
+            FROM job_history jh
+            JOIN useraccounts u ON jh.cleaner_id = u.user_id
+            JOIN categories_services cs ON jh.service_id = cs.catsv_id
+            JOIN categories_services cat ON cs.parentCat_id = cat.catsv_id
+            WHERE jh.booked_by = %s
+            ORDER BY STR_TO_DATE(jh.booked_at, '%%Y-%%m-%%d') DESC
+        """
+        cursor.execute(query, (homeowner_id,))
+        results = cursor.fetchall()
+        cursor.close()
+
+        bookings = []
+        for row in results:
+            bookings.append({
+                "cleaner_id": row[0],
+                "cleaner_name": row[1],
+                "category_id": row[2],
+                "service_name": row[3],
+                "total_charged": row[4],
+                "booked_at": row[5]
+            })
+
+        return bookings
     
     def getCleanerProfile(self, cleaner_id):
         cursor = db.cursor()
@@ -904,10 +940,10 @@ class BookingReports:
         cur.execute("""
             SELECT cs.`cat/sv_name` AS category,
                    COUNT(*)          AS booked
-            FROM   booked_services  b
+             FROM job_history jh
                    JOIN categories_services cs
-                     ON b.category_id = cs.catsv_id
-            WHERE  DATE(b.booked_at) BETWEEN %s AND %s
+                     ON jh.category_id = cs.catsv_id
+            WHERE  DATE(jh.booked_at) BETWEEN %s AND %s
             GROUP  BY cs.`cat/sv_name`
         """, (date_from, date_to))
         rows = cur.fetchall()
@@ -920,7 +956,7 @@ class BookingReports:
         cur = self.conn.cursor()
         cur.execute("""
             SELECT COUNT(DISTINCT cleaner_id)
-            FROM   booked_services
+            FROM job_history
             WHERE  DATE(booked_at) BETWEEN %s AND %s
         """, (date_from, date_to))
         count = cur.fetchone()[0]
@@ -930,10 +966,11 @@ class BookingReports:
     def getBookingsByCleaner(self, start, end):
         cur = db.cursor()
         cur.execute("""
-            SELECT cleaner_name, COUNT(*)
-            FROM booked_services
+            SELECT u.name AS cleaner_name, COUNT(*)
+            FROM job_history jh
+            JOIN useraccounts u ON jh.cleaner_id = u.user_id
             WHERE booked_at BETWEEN %s AND %s
-            GROUP BY cleaner_name
+            GROUP BY u.name
         """, (start, end))
         rows = cur.fetchall(); cur.close()
         return {name.strip(): cnt for name, cnt in rows}

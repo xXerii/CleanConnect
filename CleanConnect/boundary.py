@@ -1286,7 +1286,7 @@ class HomeOwnerPage:
 
         
     def displayCleanerProfilePage(self,cleaner_id):
-        countsCtl = controller.CleanerAnalyticsController()
+        countsCtl = controller.CleanerProfViewsController()
         countsCtl.logView(cleaner_id, self.user.user_id)
         # Clear existing widgets
         for widget in self.root.winfo_children():

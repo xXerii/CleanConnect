@@ -274,13 +274,13 @@ class SuspendProfileController:
 
 class BookedServicesController:
     def __init__(self):
-        self.bookedServices = entity.BookedServices()
+        self.bookedServices = entity.CleanerService()
 
     def fetchBookedServices(self, user_id):
         """
         Fetch booked services for a specific user.
         """
-        return self.bookedServices.getBookedServices(user_id)    
+        return self.bookedServices.getPastBookingsByHomeOwner(user_id)    
 
 # Cleaners Controllers
 
