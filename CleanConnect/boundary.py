@@ -1770,19 +1770,19 @@ class PlatformMngrPage:
         search_button = Button(search_frame, text="Search", command=self.searchCategories, font=("Arial", 12))
         search_button.pack(side="left", padx=5)
 
-        # Add Category button (new button to add category)
-        add_category_button = Button(self.root, text="Add Category", command=lambda: self.openAddCategoryForm(), font=("Arial", 12))
-        add_category_button.pack(pady=10)
-
-        addServiceButton = Button(self.root, text="Add Service", command=lambda: self.openAddServiceForm(), font=("Arial", 12))
-        addServiceButton.pack(pady=10)
-
         # Store table_frame in the object for reference
          # Table Frame (for displaying categories)
         self.table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Table background
         self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
         self.displayCategories()
+
+        # Add Category button (new button to add category)
+        add_category_button = Button(self.root, text="Add Category", command=lambda: self.openAddCategoryForm(), font=("Arial", 12))
+        add_category_button.pack(pady=10)
+
+        addServiceButton = Button(self.root, text="Add Service", command=lambda: self.openAddServiceForm(), font=("Arial", 12))
+        addServiceButton.pack(pady=10)
 
         Button(self.root, text="Back", command=self.PlatformMngrPage).pack(pady=20)
 
@@ -1807,8 +1807,16 @@ class PlatformMngrPage:
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
-        # Create canvas and scrollbar
-        canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
+        ROW_PIXELS = 30
+        HEADER_PIXELS = 30
+        VISIBLE_ROWS = 4
+
+        canvas = tk.Canvas(
+        self.table_frame,
+        bg="#add8e6",
+        highlightthickness=0,
+        height=HEADER_PIXELS + VISIBLE_ROWS * ROW_PIXELS
+)
         scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=scrollbar.set)
 
