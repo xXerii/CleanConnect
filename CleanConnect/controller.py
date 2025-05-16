@@ -8,6 +8,25 @@ class UserLoginController:
     def loginAccount(self, username, password):
         return self.userAccount.loginAccount(username, password)
     
+
+    # THIS FUNCTION IS STRICTLY FOR LOGIN TDD
+    """ 
+    def checkCredentials(self, username, password):
+        user = self.loginAccount(username, password)
+
+        if not user:
+            return {"status": "fail", "message": "Invalid credentials"}
+
+        if user.suspended:
+            return {"status": "suspended", "message": "Account suspended"}
+
+        return {
+            "status": "success",
+            "user_id": user.user_id,
+            "username": user.username,
+            "role_id": user.role_id
+        } """
+    
 class ViewAccountsController:
     def __init__(self):
         self.userAccount = entity.UserAccount()
