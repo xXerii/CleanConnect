@@ -1924,6 +1924,8 @@ class PlatformMngrPage:
         add_service_button = tk.Button(self.root, text="Add Service", font=("Arial", 12), command=self.addNewService)
         add_service_button.pack(pady=20)
 
+        tk.Button(self.root, text="Back", command=self.viewCategoriesPage).pack(pady=20)
+
     def addNewService(self): # OUT OF SCOPE
         cat_sv_name = self.servNameEntry.get()  
         selected_category_name  = self.category_combobox.get()
@@ -1953,6 +1955,7 @@ class PlatformMngrPage:
             success = self.addPlatServiceController.addService(cat_sv_name, parentCat_id)
         
         if success:
+            messagebox.showinfo("Success", f"Category '{cat_sv_name}' added successfully.")
             print("Service successfully added!")
         else:
             print("Failed to add service.")
@@ -1990,6 +1993,8 @@ class PlatformMngrPage:
             command=lambda c=category: self.updateCategory(c)
         )
         updateCategoryButton.pack(pady=20)
+
+        tk.Button(self.root, text="Back", command=self.viewCategoriesPage).pack(pady=20)
 
     def updateCategory(self, category):
         self.updateCatDesc = controller.UpdateCategoryController()
