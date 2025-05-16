@@ -130,17 +130,14 @@ class AdminPage:
 
         # Title Frame
         title_frame = tk.Frame(self.root, bg="#f0f2f5")
-        title_frame.grid(row=0, column=0, columnspan=5, pady=30)  # Title section in grid (row 0)
-
-        # Title Label inside the title frame
+        title_frame.grid(row=0, column=0, columnspan=5, pady=30, sticky="ew")
         tk.Label(title_frame, text="User Accounts", font=("Arial", 24, "bold"), bg="#f0f2f5", fg="#333").grid(row=0, column=0, padx=200)
 
         # Search Frame
         search_frame = tk.Frame(self.root)
-        search_frame.grid(row=1,column=0,columnspan=5, pady=10)
+        search_frame.grid(row=1, column=0, columnspan=5, pady=10)
 
-        search_var=tk.StringVar()
-
+        search_var = tk.StringVar()
         tk.Label(search_frame, text="Search Username:").grid(row=0, column=0, padx=5)
         self.search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
         self.search_entry.grid(row=0, column=1, padx=5)
@@ -159,25 +156,46 @@ class AdminPage:
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table(self.controller.viewAccounts())).grid(row=0, column=3, padx=5)
 
-        # Table Frame
-        table_frame = tk.Frame(self.root, bg="#add8e6")
-        table_frame.grid(row=2, column=0, columnspan=4, padx=30, pady=10, sticky="nsew")
+        # Scrollable Table Container
+        container = tk.Frame(self.root)
+        container.grid(row=2, column=0, columnspan=5, sticky="nsew")
+
+        canvas = tk.Canvas(container, borderwidth=0, bg="#add8e6")
+        canvas.grid(row=0, column=0, sticky="nsew")
+
+        vsb = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        vsb.grid(row=0, column=1, sticky="ns")
+        canvas.configure(yscrollcommand=vsb.set)
+
+        # Make sure container expands
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(2, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+
+        
+        table_frame = tk.Frame(canvas)
+        canvas.create_window((0, 0), window=table_frame, anchor="nw")
+
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        table_frame.bind("<Configure>", on_frame_configure)
 
         # Fetch all accounts ONCE and store them
         self.all_accounts = self.controller.viewAccounts()
 
         def render_table(accounts):
-            # Clear previous widgets in table frame
             for widget in table_frame.winfo_children():
                 widget.destroy()
 
-            headers = ["User ID", "Username", "Role","Status", "Actions"]
+            headers = ["User ID", "Username", "Role", "Status", "Actions"]
             header_font = ("Arial", 12, "bold")
             for col, header in enumerate(headers):
                 tk.Label(table_frame, text=header, font=header_font, bg="#e6e6e6", fg="#222", padx=15, pady=5).grid(row=0, column=col, sticky="nsew")
 
-            row_count = 1  # Track the number of rows
-
+            row_count = 1
             for account in accounts:
                 tk.Label(table_frame, text=account.user_id, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=0, sticky="nsew")
                 tk.Label(table_frame, text=account.username, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=1, sticky="nsew")
@@ -186,31 +204,31 @@ class AdminPage:
                 status = "Suspended" if account.suspended else "Active"
                 tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=3, sticky="nsew")
 
-                # Action buttons in one frame
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
-                action_frame.grid(row=row_count, column=4, padx=10, pady=5)
+                action_frame.grid(row=row_count, column=4, padx=(5,0), pady=5)
+
 
                 edit_btn = tk.Button(action_frame, text="Edit", command=lambda acc=account: self.displayAccountUpdateForm(acc), font=("Arial", 12, "bold"), width=8, borderwidth=0, cursor="hand2")
-                edit_btn.pack(side="left", padx=10)
+                edit_btn.grid(row=0, column=0, padx=(0,5))
 
                 suspend_button_text = "Suspend" if not account.suspended else "Reactivate"
-                suspend_btn = tk.Button(action_frame, text=suspend_button_text,  command=lambda acc=account: self.suspendUserAccount(acc.user_id, acc.suspended), fg="black", font=("Arial", 12, "bold"), width=8,  borderwidth=0, cursor="hand2")
-                suspend_btn.pack(side="left", padx=10)
+                suspend_btn = tk.Button(action_frame, text=suspend_button_text, command=lambda acc=account: self.suspendUserAccount(acc.user_id, acc.suspended), fg="black", font=("Arial", 12, "bold"), width=8, borderwidth=0, cursor="hand2")
+                suspend_btn.grid(row=0, column=1)
 
-                row_count += 1  # Increment the row count after each account
+                row_count += 1
 
         render_table(self.all_accounts)
 
-        # Action Buttons
+        # Bottom Buttons
         self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
         self.button_frame.grid(row=3, column=0, columnspan=5, pady=10)
-                
+
         style_btn = lambda text, cmd, color: tk.Button(self.button_frame, text=text, command=cmd, bg=color, fg="black", font=("Arial", 12, "bold"), padx=20, pady=5)
 
-        # Back and logout buttons inside the table frame (or you can place them in a separate frame as well)
         style_btn("Back to Dashboard", self.displayAdminPage, "#607d8b").grid(row=0, column=0, padx=10)
         style_btn("View Profiles", self.openManageProfiles, "#3f51b5").grid(row=0, column=1, padx=10)
-        style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)  
+        style_btn("Add Account", self.displayCreateAccountForm, "#009688").grid(row=0, column=2, padx=10)
+  
 
     def suspendUserAccount(self, user_id, currently_suspended):
         self.suspendController = controller.SuspendAccountsController()
