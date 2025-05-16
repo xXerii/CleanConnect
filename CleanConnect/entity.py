@@ -601,7 +601,7 @@ class CleanerService:
         return results
     
      # -------- short-lists ----------
-    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
+    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id, clean_svc_id):
         try:
             cur = db.cursor()
 
@@ -614,18 +614,19 @@ class CleanerService:
                    AND homeowner_id = %s
                    AND category_id = %s
                    AND service_id = %s
+                   AND clean_svc_id = %s
                 """,
-                (cleaner_id, homeowner_id, category_id, service_id)
+                (cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)
             )
             if cur.fetchone() is not None:
                 return False
 
             cur.execute(
                 """
-                INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO shortlist (cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (cleaner_id, homeowner_id, category_id, service_id)
+                (cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)
             )
             db.commit()
             return True

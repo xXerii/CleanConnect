@@ -1257,15 +1257,15 @@ class HomeOwnerPage:
             action.grid(row=row, column=4, sticky="nsew", padx=10, pady=5)
 
     
-            tk.Button(action, text="Shortlist",command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id: 
-                self.shortlistService(cid, cat, sid), width=12).pack(side="left", padx=5)
+            tk.Button(action, text="Shortlist",command=lambda cid=service.cleaner_id, cat=service.category_id, sid=service.service_id, svc=service.clean_svc_id: 
+                self.shortlistService(cid, cat, sid, svc), width=12).pack(side="left", padx=5)
             tk.Button(action, text="View Profile", command=lambda cleaner_id=service.cleaner_id: self.displayCleanerProfilePage(cleaner_id), width=14).pack(side="left", padx=5)
 
             row += 1
     
-    def shortlistService(self, cleaner_id, category_id, service_id):
+    def shortlistService(self, cleaner_id, category_id, service_id, clean_svc_id):
         shortListController = controller.AddShortlistController()
-        added = shortListController.addShortlist(cleaner_id, self.user.user_id,category_id, service_id)
+        added = shortListController.addShortlist(cleaner_id, self.user.user_id,category_id, service_id, clean_svc_id)
         print(f"Shortlist result from shortlist() method: {added}")  # Debugging output
     
         if added:

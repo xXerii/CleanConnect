@@ -185,8 +185,8 @@ class AddShortlistController:
     def __init__(self):
         self.cleanerService = entity.CleanerService()
 
-    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id):
-        return self.cleanerService.addShortlist(cleaner_id, homeowner_id, category_id, service_id)    
+    def addShortlist(self, cleaner_id, homeowner_id, category_id, service_id, clean_svc_id):
+        return self.cleanerService.addShortlist(cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)    
 
 class RemoveShortlistController:
     def __init__(self):
