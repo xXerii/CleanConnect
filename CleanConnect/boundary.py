@@ -138,6 +138,7 @@ class AdminPage:
         search_frame.grid(row=1, column=0, columnspan=5, pady=10)
 
         search_var = tk.StringVar()
+        
         tk.Label(search_frame, text="Search Username:").grid(row=0, column=0, padx=5)
         self.search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
         self.search_entry.grid(row=0, column=1, padx=5)
@@ -160,7 +161,7 @@ class AdminPage:
         container = tk.Frame(self.root)
         container.grid(row=2, column=0, columnspan=5, sticky="nsew")
 
-        canvas = tk.Canvas(container, borderwidth=0, bg="#add8e6")
+        canvas = tk.Canvas(container, borderwidth=0, bg="#add8e6",highlightthickness=2, highlightbackground="black")
         canvas.grid(row=0, column=0, sticky="nsew")
 
         vsb = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
@@ -174,8 +175,7 @@ class AdminPage:
         self.root.grid_columnconfigure(0, weight=1)
 
 
-        
-        table_frame = tk.Frame(canvas)
+        table_frame = tk.Frame(canvas, bg="#add8e6")
         canvas.create_window((0, 0), window=table_frame, anchor="nw")
 
         def on_frame_configure(event):
@@ -185,6 +185,9 @@ class AdminPage:
 
         # Fetch all accounts ONCE and store them
         self.all_accounts = self.controller.viewAccounts()
+
+        # Prevent column 4 from absorbing all the extra space
+        table_frame.grid_columnconfigure(4, weight=0)
 
         def render_table(accounts):
             for widget in table_frame.winfo_children():
@@ -204,8 +207,10 @@ class AdminPage:
                 status = "Suspended" if account.suspended else "Active"
                 tk.Label(table_frame, text=status, font=("Arial", 12), bg="#add8e6", padx=15, pady=5).grid(row=row_count, column=3, sticky="nsew")
 
+                
+
                 action_frame = tk.Frame(table_frame, bg="#add8e6")
-                action_frame.grid(row=row_count, column=4, padx=(5,0), pady=5)
+                action_frame.grid(row=row_count, column=4, padx=5, pady=5)
 
 
                 edit_btn = tk.Button(action_frame, text="Edit", command=lambda acc=account: self.displayAccountUpdateForm(acc), font=("Arial", 12, "bold"), width=8, borderwidth=0, cursor="hand2")
@@ -501,9 +506,31 @@ class AdminPage:
         tk.Button(search_frame, text="Search", command=perform_search).grid(row=0, column=2, padx=5)
         tk.Button(search_frame, text="Reset", command=lambda: render_table()).grid(row=0, column=3, padx=5)
 
-         # Table Frame
-        table_frame = tk.Frame(self.root, bg="#add8e6")
-        table_frame.grid(row=2, column=0, columnspan=4, padx=30, pady=10, sticky="nsew")
+        # Scrollable Table Container
+        container = tk.Frame(self.root)
+        container.grid(row=2, column=0, columnspan=5, sticky="nsew")
+
+        canvas = tk.Canvas(container, borderwidth=0, bg="#add8e6",highlightthickness=2, highlightbackground="black")
+        canvas.grid(row=0, column=0, sticky="nsew")
+
+        vsb = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        vsb.grid(row=0, column=1, sticky="ns")
+        canvas.configure(yscrollcommand=vsb.set)
+
+        # Make sure container expands
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(2, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+
+        table_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=table_frame, anchor="nw")
+
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        table_frame.bind("<Configure>", on_frame_configure)
 
 
         def render_table(profiles=None):
@@ -742,9 +769,31 @@ class CleanerPage:
             command=lambda: render_table(all_services)
         ).grid(row=0, column=3, padx=5)
 
-        # Table Frame
-        table_frame = tk.Frame(self.root, bg="#add8e6")
-        table_frame.grid(row=2, column=0, columnspan=5, padx=30, pady=10, sticky="nsew")
+        # Scrollable Table Container
+        container = tk.Frame(self.root)
+        container.grid(row=2, column=0, columnspan=5, sticky="nsew")
+
+        canvas = tk.Canvas(container, borderwidth=0, bg="#add8e6",highlightthickness=2, highlightbackground="black")
+        canvas.grid(row=0, column=0, sticky="nsew")
+
+        vsb = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        vsb.grid(row=0, column=1, sticky="ns")
+        canvas.configure(yscrollcommand=vsb.set)
+
+        # Make sure container expands
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(2, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+
+        table_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=table_frame, anchor="nw")
+
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        table_frame.bind("<Configure>", on_frame_configure)
 
         # Nested function to render table with original styling
         def render_table(services):
@@ -1065,15 +1114,14 @@ class CleanerPage:
         # Apply Filter Button
         tk.Button(filter_frame, text="Apply Filters", command=self.applyFilters, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=4, padx=10)
 
-        # Table Frame
-        self.table_frame = tk.Frame(self.root, bg="#ffffff", bd=2, relief="solid")  # White table background
-        self.table_frame.pack(padx=40, pady=20, fill="both", expand=True)
-
         # Fetch and display job history
         self.displayJobHistory()
 
         # Back to Dashboard Button
-        Button(self.root, text="Back to Dashboard", command=self.displayCleanerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
+        self.back_btn = tk.Button(self.root, text="Back to Dashboard", 
+                          command=self.displayCleanerPage, 
+                          font=("Arial", 12), bg="#f0f2f5", fg="blue")
+        self.back_btn.pack(side="bottom", pady=20)
         
     def applyFilters(self):
         # Get selected filters
@@ -1101,6 +1149,10 @@ class CleanerPage:
             messagebox.showerror("Error", f"Failed to apply filters: {e}")
 
     def displayJobHistory(self, job_history=None):
+        # Clear the table frame
+        if hasattr(self, "job_history_container"):
+            self.job_history_container.destroy()
+
         if job_history is None:
             try:
                 job_history = self.jobHistoryController.fetchJobHistory(self.user.user_id)
@@ -1108,9 +1160,30 @@ class CleanerPage:
                 messagebox.showerror("Error", f"Failed to fetch job history: {e}")
                 return
 
-        # Clear the table frame
-        for widget in self.table_frame.winfo_children():
-            widget.destroy()
+        # Create a container for the scrollable job history table
+        self.job_history_container = tk.Frame(self.root)
+        self.job_history_container.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Create the canvas and scrollbar
+        canvas = tk.Canvas(self.job_history_container, borderwidth=0, bg="#ffffff", highlightthickness=2, highlightbackground="black")
+        vsb = tk.Scrollbar(self.job_history_container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+
+        # Make the container and canvas expandable
+        self.job_history_container.grid_rowconfigure(0, weight=1)
+        self.job_history_container.grid_columnconfigure(0, weight=1)
+
+        # Put your actual table into this frame
+        self.table_frame = tk.Frame(canvas, bg="#ffffff")
+        canvas.create_window((0,0), window=self.table_frame, anchor="nw")
+
+        # Whenever the table_frame changes size, update scrollregion
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        self.table_frame.bind("<Configure>", on_frame_configure)
 
         # Check if job history is empty
         if not job_history:
@@ -1549,9 +1622,31 @@ class HomeOwnerPage:
 
         tk.Button(filter_frame, text="Apply Filters", command=apply_filters, font=("Arial", 12), bg="#f0f2f5", fg="blue").grid(row=0, column=4, padx=10)
 
-        # Table Frame
-        table_frame = tk.Frame(self.root, bg="#add8e6", bd=2, relief="solid")  # Light blue table background
-        table_frame.pack(padx=40, pady=20, fill="both", expand=True)
+        # Scrollable Table Container
+        container = tk.Frame(self.root)
+        container.pack(fill="both", expand=True, padx=10, pady=10)
+
+        canvas = tk.Canvas(container, borderwidth=0, bg="#add8e6",highlightthickness=2, highlightbackground="black")
+        canvas.grid(row=0, column=0, sticky="nsew")
+
+        vsb = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        vsb.grid(row=0, column=1, sticky="ns")
+        canvas.configure(yscrollcommand=vsb.set)
+
+        # Make sure container expands
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(2, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+
+        table_frame = tk.Frame(canvas, bg="#add8e6")
+        canvas.create_window((0, 0), window=table_frame, anchor="nw")
+
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        table_frame.bind("<Configure>", on_frame_configure)
 
         # Function to render the table
         def render_table(booked_services):
