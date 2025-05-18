@@ -1964,6 +1964,17 @@ class PlatformMngrPage:
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
+        if not categories:
+            # Show popup
+            messagebox.showwarning("No Categories", "No categories found in the system.")
+
+            # Show fallback label in UI
+            fallback_label = tk.Label(self.table_frame,text="No categories available. Please add a new category.",font=("Arial", 14),bg="#add8e6",fg="gray")
+            fallback_label.pack(pady=50)
+
+            tk.Button(self.table_frame,text="Add Category",command=self.openAddCategoryForm, bg="#4CAF50",fg="white",font=("Arial", 12),padx=10,pady=5).pack()
+            return
+
         ROW_PIXELS = 30
         HEADER_PIXELS = 30
         VISIBLE_ROWS = 4

@@ -786,8 +786,22 @@ class CategoryService:
     def addCategory(self, cat_sv_name, cat_desc):
         cursor = db.cursor()
         try:
+            # Check for duplicate by name
+            check_query = """
+            SELECT `cat/sv_name` FROM categories_services 
+            WHERE LOWER(REPLACE(REPLACE(`cat/sv_name`, '\r', ''), '\n', '')) = %s
+            AND parentCat_id IS NULL;
+            """
+            cursor.execute(check_query, (cat_sv_name.strip().lower(),))
+            result = cursor.fetchone()
+            print(result)  
+
+            if result:
+                print(f"Category '{cat_sv_name}' already exists.")
+                return False  # Duplicate found
+
             query = """
-           INSERT INTO categories_services (`cat/sv_name`, parentCat_id, cat_desc)
+            INSERT INTO categories_services (`cat/sv_name`, parentCat_id, cat_desc)
             VALUES (%s, NULL, %s) 
             """
             cursor.execute(query, (cat_sv_name, cat_desc))
