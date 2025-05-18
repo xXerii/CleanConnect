@@ -369,6 +369,8 @@ class AdminPage:
                 return
             
             messagebox.showinfo("Success", f"Account for {username} created successfully!")
+            self.displayAccountsPage()
+            return
 
         Button(self.root, text="Submit", command=submit).pack(pady=10)
         Button(self.root, text="Back", command=self.displayAccountsPage).pack(pady=5)
@@ -458,6 +460,7 @@ class AdminPage:
             return
      
         messagebox.showinfo("Success", "Account updated.")
+        self.displayAccountsPage()
         return
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
