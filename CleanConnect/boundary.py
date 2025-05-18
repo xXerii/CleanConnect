@@ -1545,7 +1545,7 @@ class HomeOwnerPage:
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
-        if not services:
+        if not shortlistedServices:
             messagebox.showerror("Shortlist not found", "There are no shorlist available to display.")
 
         # Fallback UI message inside table_frame
@@ -1950,13 +1950,17 @@ class PlatformMngrPage:
         if search_query:
             # call the controller’s method you just wrote
             categories = self.searchAllCategories.searchCategories(search_query)
+            if not categories:
+                messagebox.showerror("No Results", f"No categories found for '{search_query}'.")
+                self.displayCategories([], show_error=False)
+                return
         else:
             # if the box is empty, fall back to showing all
             categories = self.viewCategories.fetchCategories()
         # refresh the table with whatever list we got back
         self.displayCategories(categories)
 
-    def displayCategories(self, categories=None):
+    def displayCategories(self, categories=None, show_error=True):
         if categories is None:
             categories = self.viewCategories.fetchCategories()
 
@@ -1965,14 +1969,13 @@ class PlatformMngrPage:
             widget.destroy()
 
         if not categories:
+            if show_error:
             # Show popup
-            messagebox.showwarning("No Categories", "No categories found in the system.")
+                messagebox.showerror("No Categories", "No categories found in the system.")
 
             # Show fallback label in UI
-            fallback_label = tk.Label(self.table_frame,text="No categories available. Please add a new category.",font=("Arial", 14),bg="#add8e6",fg="gray")
+            fallback_label = tk.Label(self.table_frame,text="No categories available.",font=("Arial", 14),bg="#add8e6",fg="gray")
             fallback_label.pack(pady=50)
-
-            tk.Button(self.table_frame,text="Add Category",command=self.openAddCategoryForm, bg="#4CAF50",fg="white",font=("Arial", 12),padx=10,pady=5).pack()
             return
 
         ROW_PIXELS = 30
