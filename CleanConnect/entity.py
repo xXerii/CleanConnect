@@ -16,6 +16,10 @@ else:
     print("Connection failed")
 
 class UserProfile:
+    role_id: int
+    role: str
+    suspended: bool
+
     def __init__(self, role_id=None, role=None, suspended=None):
         self.role_id = role_id
         self.role = role
@@ -114,10 +118,15 @@ class UserProfile:
             cursor.close()
 
 class UserAccount:
-    profile: UserProfile
+    user_id = int
+    name = str
+    username = str
+    email = str
+    password = str
+    role_id = int
+    suspended = bool
     
-    def __init__(self, user_id=None, name=None, username=None, email=None, password=None, role_id=None, suspended=None, profile: UserProfile =None):
-        self.profile = profile
+    def __init__(self, user_id=None, name=None, username=None, email=None, password=None, role_id=None, suspended=None):
         self.user_id = user_id
         self.name = name
         self.username = username
@@ -237,6 +246,15 @@ class UserAccount:
             cursor.close()
 
 class CleanerService:
+    clean_svc_id = int
+    cleaner_id= int 
+    category_id= int
+    service_id= int
+    price=float
+    description=str
+    service_name=str
+    category_name=str
+    
     def __init__(self, clean_svc_id=None, cleaner_id=None, category_id=None,service_id=None, price=None, description=None, service_name=None, category_name=None):
         self.clean_svc_id = clean_svc_id
         self.cleaner_id = cleaner_id 
@@ -701,6 +719,11 @@ class CleanerService:
 
 
 class CategoryService:
+    catsv_id=int
+    cat_sv_name=str
+    parentCat_id =int
+    cat_desc=str
+
     def __init__(self, catsv_id=None, cat_sv_name=None, parentCat_id =None, cat_desc=None):
         self.catsv_id = catsv_id
         self.cat_sv_name = cat_sv_name
@@ -847,34 +870,31 @@ class CategoryService:
 
 class CleanerAnalytics:
     """Logs views & short-lists and returns live counts."""
-    def __init__(self):
-        self.conn = db
-
     # -------- profile views --------
     def log_view(self, cleaner_id, viewer_id):
-        cur = self.conn.cursor()
+        cur = db.cursor()
         cur.execute(
             "INSERT INTO profile_view (cleaner_id, viewer_id) VALUES (%s,%s)",
             (cleaner_id, viewer_id)
         )
-        self.conn.commit();  cur.close()
+        db.commit();  cur.close()
 
     def view_count(self, cleaner_id):
-        cur = self.conn.cursor()
+        cur = db.cursor()
         cur.execute("SELECT COUNT(*) FROM profile_view WHERE cleaner_id=%s",
                     (cleaner_id,))
         cnt = cur.fetchone()[0];  cur.close()
         return cnt
 
     def shortlist_count(self, cleaner_id):
-        cur = self.conn.cursor()
+        cur = db.cursor()
         cur.execute("SELECT COUNT(*) FROM shortlist WHERE cleaner_id=%s",
                     (cleaner_id,))
         cnt = cur.fetchone()[0];  cur.close()
         return cnt
 
     def shortlist_count_for_user(self, cleaner_id, homeowner_id):
-        cur = self.conn.cursor()
+        cur = db.cursor()
         cur.execute("SELECT 1 FROM shortlist "
                     "WHERE cleaner_id=%s AND homeowner_id=%s",
                     (cleaner_id, homeowner_id))
@@ -883,14 +903,11 @@ class CleanerAnalytics:
         return bool(exists)
 
 class BookedServices:
-    def __init__(self):
-        self.db = db  # Assuming `db` is your database connection object
-    
     def getBookedServices(self, user_id):
         """
         Fetch booked services for a specific user from the booked_services table.
         """
-        cursor = self.db.cursor()
+        cursor = db.cursor()
         query = """
             SELECT 
                 bs.cleaner_id,
@@ -931,12 +948,10 @@ class BookedServices:
 # Booking reports
 # ------------------------------------------------------------------
 class BookingReports:
-    def __init__(self):
-        self.conn = db                          # uses your existing connection
 
-    # ❶ bookings grouped by category
+    # bookings grouped by category
     def by_category(self, date_from, date_to):
-        cur = self.conn.cursor()
+        cur = db.cursor()
         cur.execute("""
             SELECT cs.`cat/sv_name` AS category,
                    COUNT(*)          AS booked
@@ -953,7 +968,7 @@ class BookingReports:
 
     # number of distinct cleaners booked
     def cleaners_booked(self, date_from, date_to):
-        cur = self.conn.cursor()
+        cur = db.cursor()
         cur.execute("""
             SELECT COUNT(DISTINCT cleaner_id)
             FROM job_history
@@ -974,7 +989,3 @@ class BookingReports:
         """, (start, end))
         rows = cur.fetchall(); cur.close()
         return {name.strip(): cnt for name, cnt in rows}
-
-        
-
-# RANDOM STUFF FOR CI TESTING PLEASE IGNORE

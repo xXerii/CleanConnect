@@ -1,20 +1,18 @@
 @startuml classes
 set namespaceSeparator none
 class "BookedServices" as entity.BookedServices {
-  db : CMySQLConnection
   getBookedServices(user_id)
 }
 class "BookingReports" as entity.BookingReports {
-  conn : CMySQLConnection
   by_category(date_from, date_to)
   cleaners_booked(date_from, date_to)
   getBookingsByCleaner(start, end)
 }
 class "CategoryService" as entity.CategoryService {
-  cat_desc : NoneType
-  cat_sv_name : NoneType
-  catsv_id : NoneType
-  parentCat_id : NoneType
+  cat_desc : str
+  cat_sv_name : str
+  catsv_id : int
+  parentCat_id : int
   addCategory(cat_sv_name, cat_desc)
   addNewService(cat_sv_name, parentCat_id)
   deleteCategory(catsv_id)
@@ -25,28 +23,28 @@ class "CategoryService" as entity.CategoryService {
   updateCategoryDesc(catsv_id, new_desc)
 }
 class "CleanerAnalytics" as entity.CleanerAnalytics {
-  conn : CMySQLConnection
   log_view(cleaner_id, viewer_id)
   shortlist_count(cleaner_id)
   shortlist_count_for_user(cleaner_id, homeowner_id)
   view_count(cleaner_id)
 }
 class "CleanerService" as entity.CleanerService {
-  category_id : NoneType
-  category_name : NoneType
-  clean_svc_id : NoneType
-  cleaner_id : NoneType
-  description : NoneType
-  price : NoneType
-  service_id : NoneType
-  service_name : NoneType
+  category_id : int
+  category_name : str
+  clean_svc_id : int
+  cleaner_id : int
+  description : str
+  price : float
+  service_id : int
+  service_name : str
   addService(cleaner_id, category_id, service_id, price, description)
-  addShortlist(cleaner_id, homeowner_id, category_id, service_id)
+  addShortlist(cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)
   deleteService(cleaner_id, service_id)
   getAllAvailableService()
   getCleanerProfile(cleaner_id)
   getCleanerServicesByUser(user_id)
   getJobHistoryByCleaner(cleaner_id)
+  getPastBookingsByHomeOwner(homeowner_id)
   getShortlistedServices(homeowner_id)
   removeShortlist(cleaner_id, homeowner_id, category_id, service_id)
   searchAllServices(search_query)
@@ -55,15 +53,14 @@ class "CleanerService" as entity.CleanerService {
   updateService(cleaner_id, service_id, new_price, new_description)
 }
 class "UserAccount" as entity.UserAccount {
-  email : NoneType
-  name : NoneType
-  password : NoneType
-  +profile: UserProfile
+  email : str
+  name : str
+  password : str
   role
-  role_id : NoneType
-  suspended : NoneType
-  user_id : NoneType
-  username : NoneType
+  role_id : int
+  suspended : bool
+  user_id : int
+  username : str
   createAccount(name, username, password, email, role_id)
   loginAccount(username, password)
   searchAccounts(search_query)
@@ -72,14 +69,15 @@ class "UserAccount" as entity.UserAccount {
   viewAccounts()
 }
 class "UserProfile" as entity.UserProfile {
-  role : NoneType
-  role_id : NoneType
-  suspended : NoneType
+  role : str
+  role_id : int
+  suspended : bool
   createProfile(role)
   searchProfiles(search_query)
   setProfileSuspension(role_id: int, suspended: bool)
   updateProfile(role_id, new_role)
   viewProfiles()
 }
-entity.UserProfile "1" --> "1" entity.UserAccount : profile
+entity.UserAccount "0..*  " o-- "1  " entity.UserProfile : has 
+entity.CleanerService "0..*  " o-- "1  " entity.CategoryService : has 
 @enduml
