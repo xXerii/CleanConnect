@@ -683,6 +683,8 @@ class AdminPage:
             return
         
         messagebox.showinfo("Success", "Profile updated")
+        self.displayProfilesPage()
+        return
 
     # Creates an instance of LoginPage to utilise the
     # logout funtioned defined there
@@ -1145,6 +1147,10 @@ class CleanerPage:
                 job_history.sort(key=lambda x: x['booked_at'])
             elif date_sort == "Descending":
                 job_history.sort(key=lambda x: x['booked_at'], reverse=True)
+            
+            if not job_history:
+                messagebox.showerror("No Results", "No job history matches the selected filters.")
+                return
 
             # Update the table
             self.displayJobHistory(job_history)
@@ -1190,7 +1196,8 @@ class CleanerPage:
 
         # Check if job history is empty
         if not job_history:
-            tk.Label(self.table_frame, text="No job history found.", font=("Arial", 12), bg="#ffffff", fg="black").pack(pady=20)
+            messagebox.showerror("No History", "No job history found.")
+            tk.Label(self.table_frame, text="", font=("Arial", 12), bg="#ffffff", fg="black").pack(pady=20)
             return
 
         # Table Headers
@@ -1296,6 +1303,10 @@ class HomeOwnerPage:
             search_service_controller = controller.ViewAllAvailableServicesController()
             filtered_services = search_service_controller.getAllAvailableService()
 
+        if not filtered_services:
+            messagebox.showerror("No Results", f"No Services found for category '{selected_category}'.")
+            return    
+
         # Display the fetched services
         self.displayAllServices(filtered_services)
 
@@ -1308,6 +1319,13 @@ class HomeOwnerPage:
         # Clear existing table widgets
         for widget in self.table_frame.winfo_children():
             widget.destroy()
+        
+        if not services:
+            messagebox.showerror("No Services Found", "There are no services available to display.")
+
+        # Fallback UI message inside table_frame
+            tk.Label(self.table_frame, text="No services to display.", font=("Arial", 14), bg="#add8e6").pack(pady=20)
+            return
 
          # Create canvas and scrollbar inside the table_frame
         canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
@@ -1507,7 +1525,11 @@ class HomeOwnerPage:
             # No filter, get all shortlisted services
             search_service_controller = controller.ViewShortlistedServicesController()
             filtered_services = search_service_controller.getShortlistedServices(self.user.user_id)
-
+        
+        if not filtered_services:
+            messagebox.showerror("No Results", f"No shortlisted services found for category '{selected_category}'.")
+            return
+        
         # Display the fetched shortlisted services
         self.displayShortlistServices(filtered_services)
 
@@ -1523,6 +1545,13 @@ class HomeOwnerPage:
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
+        if not services:
+            messagebox.showerror("Shortlist not found", "There are no shorlist available to display.")
+
+        # Fallback UI message inside table_frame
+            tk.Label(self.table_frame, text="No shortlist to display.", font=("Arial", 14), bg="#add8e6").pack(pady=20)
+            return
+        
         # Create canvas and scrollbar inside the table_frame
         canvas = tk.Canvas(self.table_frame, bg="#add8e6", highlightthickness=0)
         scrollbar = tk.Scrollbar(self.table_frame, orient="vertical", command=canvas.yview)
@@ -1619,7 +1648,11 @@ class HomeOwnerPage:
                     service for service in booked_services
                     if service["booked_at"].month == month_index
                 ]
-
+                
+            if not booked_services:
+                messagebox.showerror("No Results", "No booked services match the selected filters.")
+                return
+            
             # Update the table with filtered results
             render_table(booked_services)
 
@@ -1657,6 +1690,11 @@ class HomeOwnerPage:
             for widget in table_frame.winfo_children():
                 widget.destroy()
 
+
+            if not booked_services:
+                messagebox.showerror("No Results", "No booked services to display.")
+                return
+            
             # Table Headers
             headers = ["Cleaner ID", "Cleaner Name", "Category ID", "Service Name", "Total Charged", "Booked At"]
             for col, header in enumerate(headers):
@@ -1674,6 +1712,9 @@ class HomeOwnerPage:
         # Fetch and display all booked services initially
         booked_services_controller = controller.BookedServicesController()
         booked_services = booked_services_controller.fetchBookedServices(self.user.user_id)
+
+        if not booked_services:
+            messagebox.showerror("No Results", "No booked services found.")
         render_table(booked_services)
 
         # Back to Dashboard Button
@@ -1815,7 +1856,7 @@ class PlatformMngrPage:
         self.result.config(text=f"Unique cleaners booked: {cleaners}")
 
         if not cat_data:
-            messagebox.showinfo("No data")
+            messagebox.showerror("No data","No data available.")
             return
 
         pretty = {"daily":   "Daily",
