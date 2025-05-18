@@ -1,83 +1,83 @@
 @startuml classes
 set namespaceSeparator none
 class "BookedServices" as entity.BookedServices {
-  getBookedServices(user_id)
+  +getBookedServices(user_id)
 }
 class "BookingReports" as entity.BookingReports {
-  by_category(date_from, date_to)
-  cleaners_booked(date_from, date_to)
-  getBookingsByCleaner(start, end)
+  +by_category(date_from, date_to)
+  +cleaners_booked(date_from, date_to)
+  +getBookingsByCleaner(start, end)
 }
 class "CategoryService" as entity.CategoryService {
-  cat_desc : str
-  cat_sv_name : str
-  catsv_id : int
-  parentCat_id : int
-  addCategory(cat_sv_name, cat_desc)
-  addNewService(cat_sv_name, parentCat_id)
-  deleteCategory(catsv_id)
-  fetchCleanersByCategory(category_id)
-  getAllCategories()
-  getServicesByCategory(parentCat_id)
-  searchCategories(search_query)
-  updateCategoryDesc(catsv_id, new_desc)
+  + cat_desc: str
+  + cat_sv_name: str
+  + catsv_id: int
+  + parentCat_id: int
+
+  + BooladdCategory(cat_sv_name, cat_desc)
+  + addNewService(cat_sv_name, parentCat_id)
+  + deleteCategory(catsv_id)
+  + fetchCleanersByCategory(category_id)
+  + getAllCategories()
+  + getServicesByCategory(parentCat_id)
+  + searchCategories(search_query)
+  + updateCategoryDesc(catsv_id, new_desc)
 }
 class "CleanerAnalytics" as entity.CleanerAnalytics {
-  log_view(cleaner_id, viewer_id)
-  shortlist_count(cleaner_id)
-  shortlist_count_for_user(cleaner_id, homeowner_id)
-  view_count(cleaner_id)
+  +log_view(cleaner_id, viewer_id)
+  +shortlist_count(cleaner_id)
+  +shortlist_count_for_user(cleaner_id, homeowner_id)
+  +view_count(cleaner_id)
 }
 class "CleanerService" as entity.CleanerService {
-  category_id : int
-  category_name : str
-  clean_svc_id : int
-  cleaner_id : int
-  description : str
-  price : float
-  service_id : int
-  service_name : str
-  addService(cleaner_id, category_id, service_id, price, description)
-  addShortlist(cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)
-  deleteService(cleaner_id, service_id)
-  getAllAvailableService()
-  getCleanerProfile(cleaner_id)
-  getCleanerServicesByUser(user_id)
-  getJobHistoryByCleaner(cleaner_id)
-  getPastBookingsByHomeOwner(homeowner_id)
-  getShortlistedServices(homeowner_id)
-  removeShortlist(cleaner_id, homeowner_id, category_id, service_id)
-  searchAllServices(search_query)
-  searchCleanerServices(search_query, cleaner_id)
-  searchShortlistedServicesByCategory(user_id, search_query)
-  updateService(cleaner_id, service_id, new_price, new_description)
+  + category_id: int
+  + category_name: str
+  + clean_svc_id: int
+  + cleaner_id: int
+  + description: str
+  + price: float
+  + service_id: int
+  + service_name: str
+
+  + addService(cleaner_id, category_id, service_id, price, description)
+  + addShortlist(cleaner_id, homeowner_id, category_id, service_id, clean_svc_id)
+  + deleteService(cleaner_id, service_id)
+  + getAllAvailableService()
+  + getCleanerProfile(cleaner_id)
+  + getCleanerServicesByUser(user_id)
+  + getJobHistoryByCleaner(cleaner_id)
+  + getPastBookingsByHomeOwner(homeowner_id)
+  + getShortlistedServices(homeowner_id)
+  + removeShortlist(cleaner_id, homeowner_id, category_id, service_id)
+  + searchAllServices(search_query)
+  + searchCleanerServices(search_query, cleaner_id)
+  + searchShortlistedServicesByCategory(user_id, search_query)
+  + updateService(cleaner_id, service_id, new_price, new_description)
 }
 class "UserAccount" as entity.UserAccount {
-  email : str
-  name : str
-  password : str
-  role
-  role_id : int
-  suspended : bool
-  user_id : int
-  username : str
-  createAccount(name, username, password, email, role_id)
-  loginAccount(username, password)
-  searchAccounts(search_query)
-  setAccountSuspension(user_id: int, suspended: bool)
-  updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
-  viewAccounts()
+  + email: str
+  + name: str
+  + password: str
+  + role_id: int
+  + suspended: bool
+  + user_id: int
+  + username: str
+  + createAccount(name, username, password, email, role_id)
+  + loginAccount(username, password)
+  + searchAccounts(search_query)
+  + setAccountSuspension(user_id: int, suspended: bool)
+  + updateAccount(user_id, new_name, new_username, new_email, new_password, new_role_id)
+  + viewAccounts()
 }
 class "UserProfile" as entity.UserProfile {
-  role : str
-  role_id : int
-  suspended : bool
-  createProfile(role)
-  searchProfiles(search_query)
-  setProfileSuspension(role_id: int, suspended: bool)
-  updateProfile(role_id, new_role)
-  viewProfiles()
+  + role : str
+  +role_id : int
+  +suspended : bool
+  +createProfile(role)
+  +searchProfiles(search_query)
+  +setProfileSuspension(role_id: int, suspended: bool)
+  +updateProfile(role_id, new_role)
+  +viewProfiles()
 }
-entity.UserAccount "0..*  " o-- "1  " entity.UserProfile : has 
-entity.CleanerService "0..*  " o-- "1  " entity.CategoryService : has 
+skinparam classAttributeIconSize 0
 @enduml
