@@ -70,12 +70,23 @@ class UserProfile:
 
     def createProfile(self, role):
         cursor = db.cursor()
-        query = """
+
+        # Check if profile with the same role already exists
+        check_query = """
+        SELECT role_id FROM userprofile WHERE role = %s
+        """
+        try:
+
+            cursor.execute(check_query, (role,))
+            if cursor.fetchone():
+                print("Profile already exists with the same role # DEBUG FALSE")
+                return False    
+            
+            query = """
             INSERT INTO userprofile (
                 role
             ) VALUES (%s)
-        """
-        try:
+            """
             cursor.execute(query, (role,))
             db.commit()
             print("Profile created successfully # DEBUG TRUE")
@@ -195,11 +206,21 @@ class UserAccount:
     
     def createAccount(self, name, username, password, email, role_id):
         cursor = db.cursor()
-        query = """
+
+        check_query = """
+        SELECT user_id FROM useraccounts WHERE username = %s OR email = %s
+        """
+
+        try:
+            cursor.execute(check_query, (username, email))
+            if cursor.fetchone():
+                print("Account already exists with the same username or email # DEBUG FALSE")
+                return False
+            
+            query = """
             INSERT INTO useraccounts (name, username, password, email, role_id)
             VALUES (%s, %s, %s, %s, %s)
         """
-        try:
             cursor.execute(query, (name, username, password, email, role_id))
             db.commit()
             print("Account created successfully # DEBUG TRUE")
