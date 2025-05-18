@@ -1113,7 +1113,18 @@ class CleanerPage:
         tk.Label(filter_frame, text="Filter by Service Type:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=2, padx=5)
         self.service_filter_var = tk.StringVar(value="All")
         service_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.service_filter_var, state="readonly", width=20)
-        service_filter_dropdown['values'] = ["All", "Steam Cleaning", "Extraction", "Leather Cleaning", "Kitchen Deep Clean", "Bathroom Scrub Down", "Bedroom Deep Clean", "UV-C Cleaning"]
+        # Get all available services
+        servicesCtlr = controller.ViewAllAvailableServicesController()
+        services = servicesCtlr.getAllAvailableService()
+
+        # Extract unique service names
+        unique_service_names = sorted({service.service_name for service in services})
+
+        # Prepend "All"
+        dropdown_values = ["All"] + unique_service_names
+
+        # Assign to dropdown
+        service_filter_dropdown['values'] = dropdown_values
         service_filter_dropdown.grid(row=0, column=3, padx=5)
 
         # Apply Filter Button
@@ -1256,24 +1267,27 @@ class HomeOwnerPage:
         filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
         filter_frame.pack(pady=10)
 
+        # Get all available services
+        servicesCtlr = controller.ViewAllAvailableServicesController()
+        services = servicesCtlr.getAllAvailableService()
+
+        catCtlr = controller.FetchCategoriesController()
+        cat = catCtlr.fetchCategories()
+
+        # Extract unique service names
+        unique_service_names = sorted({service.service_name for service in services})
+        unique_cat_names = sorted({category.cat_sv_name for category in cat})
+
+        # Prepend "All"
+        dropdown_values = ["All"] + unique_service_names + unique_cat_names
+
+        # Assign to dropdown
+
         # Category Filter Dropdown
         tk.Label(filter_frame, text="Search by Category or Services", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
         self.category_filter_var = tk.StringVar(value="All")
         category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
-        category_filter_dropdown['values'] = [
-                    "All",
-                    "Sofa Cleaning",
-                    "Mattress Cleaning",
-                    "Aircon Servicing",
-                    "Deep Cleaning",
-                    "Steam Cleaning",
-                    "Extraction",
-                    "Leather Cleaning",
-                    "Kitchen Deep Clean",
-                    "Bathroom Scrub Down",
-                    "Bedroom Deep Clean",
-                    "UV-C Cleaning"
-                ]
+        category_filter_dropdown['values'] = dropdown_values
         category_filter_dropdown.grid(row=0, column=1, padx=5)
 
         # Apply Filter Button
@@ -1477,24 +1491,25 @@ class HomeOwnerPage:
         filter_frame = tk.Frame(self.root, bg="#f0f2f5")  # Match background color
         filter_frame.pack(pady=10)
 
+        # Get all available services
+        servicesCtlr = controller.ViewAllAvailableServicesController()
+        services = servicesCtlr.getAllAvailableService()
+
+        catCtlr = controller.FetchCategoriesController()
+        cat = catCtlr.fetchCategories()
+
+        # Extract unique service names
+        unique_service_names = sorted({service.service_name for service in services})
+        unique_cat_names = sorted({category.cat_sv_name for category in cat})
+
+        # Prepend "All"
+        dropdown_values = ["All"] + unique_service_names + unique_cat_names
+
         # Category Filter Dropdown
         tk.Label(filter_frame, text="Search by Category or Services:", font=("Arial", 12), bg="#f0f2f5", fg="black").grid(row=0, column=0, padx=5)
         self.category_filter_var = tk.StringVar(value="All")
         category_filter_dropdown = ttk.Combobox(filter_frame, textvariable=self.category_filter_var, state="readonly", width=20)
-        category_filter_dropdown['values'] = [
-                    "All",
-                    "Sofa Cleaning",
-                    "Mattress Cleaning",
-                    "Aircon Servicing",
-                    "Deep Cleaning",
-                    "Steam Cleaning",
-                    "Extraction",
-                    "Leather Cleaning",
-                    "Kitchen Deep Clean",
-                    "Bathroom Scrub Down",
-                    "Bedroom Deep Clean",
-                    "UV-C Cleaning"
-                ]
+        category_filter_dropdown['values'] = dropdown_values
         category_filter_dropdown.grid(row=0, column=1, padx=5)
 
         # Apply Filter Button
@@ -1528,6 +1543,7 @@ class HomeOwnerPage:
         
         if not filtered_services:
             messagebox.showerror("No Results", f"No shortlisted services found for category '{selected_category}'.")
+            tk.Label(self.table_frame, text="No shortlisted services to display.", font=("Arial", 14), bg="#add8e6", fg="gray").pack(pady=20)
             return
         
         # Display the fetched shortlisted services
