@@ -1518,6 +1518,8 @@ class HomeOwnerPage:
         tk.Button(self.root, text="Back to Dashboard", command=self.displayHomeOwnerPage, font=("Arial", 12), bg="#f0f2f5", fg="blue").pack(pady=20)
 
     def applySearchShortlistByCategory(self):
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
     # Get selected category from dropdown
         selected_category = self.category_filter_var.get()
 
@@ -1534,7 +1536,7 @@ class HomeOwnerPage:
         
         if not filtered_services:
             messagebox.showerror("No Results", f"No shortlisted services found for category '{selected_category}'.")
-            tk.Label(self.table_frame, text="No shortlisted services to display.", font=("Arial", 14), bg="#add8e6", fg="gray").pack(pady=20)
+            tk.Label(self.table_frame, text="No shortlist to display.", font=("Arial", 14), bg="#add8e6").pack(pady=20)
             return
         
         # Display the fetched shortlisted services
