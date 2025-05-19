@@ -249,7 +249,6 @@ class SearchCategoryController:
     def searchCategories(self, search_query):
         return self.categoryService.searchCategories(search_query)
     
-# User Admins Controllers
 class CreateProfileController:
     def __init__(self):
         self.userProfile = entity.UserProfile()
@@ -282,11 +281,6 @@ class BookedServicesController:
         """
         return self.bookedServices.getPastBookingsByHomeOwner(user_id)    
 
-# Cleaners Controllers
-
-# Home owner Controllers
-
-# Platform Manager Controllers
 class BookingReportController:
     def __init__(self):
         self.model = entity.BookingReports()

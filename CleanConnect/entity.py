@@ -512,9 +512,11 @@ class CleanerService:
             ua.user_id = %s
             AND ua.role_id = 2;
         """
+        
 
         cursor.execute(query, (cleaner_id,))
         result = cursor.fetchall()
+        print(result)
         cursor.close()
 
         return result

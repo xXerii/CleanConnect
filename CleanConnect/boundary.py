@@ -7,10 +7,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import calendar
 
-# Please use this dummy function as placeholder for the buttons if needed
-def dummy():
-    messagebox.showinfo("Clicked", "Feature coming soon.")
-
 class LoginPage:
     def __init__(self, root):
         self.root = root
@@ -105,7 +101,6 @@ class AdminPage:
         Label(self.root, text=f"Role ID: {self.user.role_id}").pack(pady=5)
 
         # Add Admin features here
-        Button(self.root, text="View Reports", command=dummy).pack(pady=5)
         Button(self.root, text="Manage Users", command=self.openManageAccounts).pack(pady=5)
 
         Button(self.root, text="Logout", command=self.logout).pack(pady=20)
@@ -628,10 +623,6 @@ class AdminPage:
     
     def suspendProfile(self, profile, activate: bool):
         self.susController = controller.SuspendProfileController()
-        """
-        Pops up a Yes/No dialog to suspend or reactivate,
-        then calls the controller and refreshes the table.
-        """
         verb = "suspend" if not profile.suspended else "reactivate"
         msg = f"Are you sure you want to {verb} role #{profile.role_id} ({profile.role})?"
         if not messagebox.askyesno("Please confirm", msg):
