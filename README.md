@@ -18,4 +18,4 @@ period
 7. Support platform management to manage categories for cleaning services and get reports (daily, weekly,
 monthly)
 
-Written in ???
+Written in python.
